@@ -1,6 +1,6 @@
 # Expo HAS CHANGED
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before writing any code.
+Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any code.
 
 ---
 
@@ -322,6 +322,111 @@ AI generating "brutal" content is a brand/store gun, especially Tier 4. Controls
 - **Organic shares/week** — growth metric, via UTM on cards.
 - **Streak length distribution** — habit formation vs novelty.
 - **AI cost per active user** (NEW) — unit economics guardrail.
+
+---
+
+## 14. Screen / Page Inventory (v1.0 MVP)
+
+The UI surfaces needed for the MVP scope (Section 11), grouped by flow. Deferred-feature screens are listed separately and are NOT built in v1.0.
+
+### 14.1 Onboarding (first launch)
+1. **Welcome / hook** — one-line pitch + sample roast card.
+2. **Harsh-humor consent notice** — required by Section 9.1 ("opt-in, user-controlled").
+3. **Default rudeness + escalation pick** — global defaults.
+4. **Notification permission prompt** — native push grant.
+5. **First goal create** — funnels into goal setup.
+
+### 14.2 Core loop
+6. **Home / dashboard** — all goals at a glance (done/pending/skipped today) + streak summary (Section 4.7).
+7. **Goal create / edit** — name, category, cue, schedule, rudeness override, escalation speed, buddy (Section 4.1).
+8. **Goal detail** — per-goal streak, completion rate, timeline, roasts-received badge (Section 4.7).
+9. **Completion confirm** — tap Done → verdict card (Section 4.3).
+10. **Skip flow** — "I can't today" → reason → countdown → final roast (Section 4.5; friction is intentional).
+
+### 14.3 Social + share
+11. **Accountability buddy** — invite/manage buddy, see what gets shared (Section 4.6).
+12. **Share card** — watermarked roast card, export to IG / TikTok / X / WhatsApp (Section 4.8).
+
+### 14.4 Settings
+13. **Settings (global)** — default rudeness, escalation, quiet hours, sound, sharing prefs (Section 7.2).
+14. **Paywall / upgrade** — free vs paid gating: 5 goals, Unhinged, buddy (Section 12).
+
+### 14.5 System surface (not a full screen)
+15. **Notification + deep-link targets** — push taps route into completion / skip / goal detail. Needs design, but not a standalone page.
+
+### 14.6 Deferred to v1.1+ (no page in v1.0)
+Photo verification + verdicts (4.4), weekly summary notifications, "friend sets/judges your goal" multiplayer, "Roast of the Week", analytics dashboard.
+
+---
+
+## 15. Frontend Architecture (service-based)
+
+Layered architecture. UI calls services only; services own all I/O and return models. No SDK access from screens.
+
+### 15.1 Layers
+
+```
+src/
+  models/      pure data shapes (TS interfaces/types) — no logic, no I/O
+  services/    business logic + all I/O; return models, throw on error
+  hooks/       thin React wrappers (useGoals, useStreak…); hold state, catch errors
+  lib/         thin SDK clients (supabase, fcm, ai provider) — services wrap these
+  screens/     UI (Section 14 pages) — call hooks only
+```
+
+**Flow:** `screens → hooks → services → lib`. Models flow back up.
+
+**Rules:**
+- Screens import models for typing + call hooks. Never import `services` or `lib` directly.
+- Services are plain TS (framework-agnostic, testable without React). Return the model directly; **throw on error**.
+- Hooks (`useGoals`, `useGoal(id)`, `useStreak(id)`, `useSkip`, `useRoastCard`, `useBuddy`, `useUser`, `useBilling`) wrap services, hold loading/error state, catch.
+- `lib` wraps vendor SDKs so providers stay swappable (Section 8.3).
+
+### 15.2 Models (`src/models`)
+
+| Model | Core fields | PRD |
+|---|---|---|
+| `Goal` | id, name, category, cue, schedule, rudenessLevel, escalationSpeed, buddyId?, paused | 4.1 |
+| `GoalCategory` | enum: gym/study/chores/diet/sleep/custom | 4.1 |
+| `Schedule` | days[], timeOfDay, intervalHours? | 4.1 |
+| `RudenessLevel` | enum 1–4 | 6 |
+| `EscalationSpeed` | enum slow/normal/unhinged | 4.1 |
+| `EscalationWave` | wave#, tactic (snark/shrink/stakes/roast) | 3.3 |
+| `Completion` | id, goalId, timestamp, source (tap/notif), witnessed | 4.3 |
+| `Skip` | id, goalId, timestamp, reason | 4.5 |
+| `StreakStats` | current, longest, completionRate7/30/90, ignoredCount | 4.7 |
+| `RoastCard` | id, goalId, text, wave, watermark, createdAt | 4.8 |
+| `Buddy` | id, contact, inviteStatus | 4.6 |
+| `User` | id, defaults (rudeness/escalation/quietHours/sound), tier (free/paid) | 7.2, 12 |
+| `NotificationPayload` | goalId, wave, body, deepLink | 4.2 |
+
+### 15.3 Services (`src/services`)
+
+| Service | Responsibility | Key methods → returns |
+|---|---|---|
+| `GoalService` | CRUD goals | `list()→Goal[]`, `get(id)→Goal`, `create/update/delete`, `pause(id)` |
+| `CompletionService` | mark done, streak math | `complete(goalId)→Completion`, `getStats(goalId)→StreakStats` |
+| `SkipService` | skip flow + friction | `skip(goalId,reason)→Skip` |
+| `RoastService` | fetch/personalize lines | `getLine(goalId,wave)→RoastCard` (cached pool + template interp, 8.4 — no live AI call v1) |
+| `NotificationService` | schedule + deep links | `scheduleForGoal(goal)`, `cancel(goalId)`, `handleTap(payload)` |
+| `BuddyService` | invite, notify buddy | `invite(contact)→Buddy`, `notifyCompletion/notifySkip` |
+| `ShareService` | build/export cards | `buildCard(roast)→RoastCard`, `export(card,target)` |
+| `UserService` | profile, defaults, tier | `getUser()→User`, `updateDefaults()`, `getTier()` |
+| `BillingService` | paywall gating | `canAddGoal()`, `canUseUnhinged()`, `purchase()` |
+| `EscalationService` | tactic-ladder logic | `nextWave(goal,history)→EscalationWave` (maps wave→tactic, 3.3) |
+
+### 15.4 Lib (`src/lib`) — swappable SDK wrappers
+
+| Module | Wraps | Notes |
+|---|---|---|
+| `supabase.ts` | Supabase client | accounts, goals, history (8.2) |
+| `fcm.ts` | Firebase messaging | push delivery (8.2) |
+| `notifications.ts` | expo-notifications | local schedule + tap deep link |
+| `ai/provider.ts` | `generateRoast(context)` interface | swappable vendor (8.3); batch/cron only, not runtime |
+
+### 15.5 Where AI lives
+
+Per Section 8.4: **no live AI call at send time in v1.** Generation runs in a **batch job** (Supabase Edge Function / cron) → fills shared cached line pool. `RoastService` reads the pool + string-interpolates cue/name/callback. `ai/provider.ts` is server-side/batch only — frontend services never call it live.
 
 ---
 
