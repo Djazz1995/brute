@@ -43,12 +43,12 @@ Loop: **create goal → home list → tap Done → streak updates.**
 - [x] Hooks `useGoals`, `useGoal`, `useComplete`, `useStreak` (+ `useSession` session gate in root layout).
 - [x] Screens: Home (list + new), Goal create/edit (form, prefill on edit), Goal detail (stats + Done/Pause/Edit/Delete). Shared `Button` component.
 - **Done when:** real round-trip, no mocks. — data path ✅ verified: `npm run db:smoke3` (goal → completion → read → cascade, RLS holds). tsc/lint/web-export green.
-  - [ ] Visual run in iOS/Android simulator (`npm run ios`) — UI not yet exercised on a device.
+  - [x] Visual run in iOS simulator — exercised on device (drove keyboard, tab-bar, time-picker, scheduling fixes).
 
 ### Phase 3 polish (UI, no new deps)
 
-- [ ] Goal-detail hierarchy: **Done** as hero, **Edit** → header-right button, **Delete** demoted (text link / overflow), Pause secondary. Less flat, safer destructive action.
-- [ ] "**Next reminder: Mon 07:00**" on goal detail — soonest upcoming slot from `schedule.slots` (pure date math, no notification engine needed).
+- [x] Goal-detail hierarchy: **Done** as hero (taller primary), **Edit** → header-right button, **Delete** demoted to a small red text link, Pause secondary.
+- [x] "**Next reminder**" card on goal detail — soonest upcoming slot from `schedule.slots` (pure date math; shows "Paused — next would be" when paused).
 
 ## Phase 4 — Engagement mechanics
 

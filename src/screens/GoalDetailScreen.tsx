@@ -1,6 +1,6 @@
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
@@ -9,9 +9,35 @@ import { Spacing } from '@/constants/theme';
 import { useComplete } from '@/hooks/use-complete';
 import { useGoal } from '@/hooks/use-goal';
 import { useStreak } from '@/hooks/use-streak';
+import type { ScheduleSlot } from '@/models';
 import { goalService } from '@/services/goalService';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function slotText(s: ScheduleSlot): string {
+  return `${WEEKDAYS[s.day - 1]} ${s.label ? `${s.label} ` : ''}${s.time}`;
+}
+
+/** Soonest upcoming slot from now (wraps to next week). */
+function nextReminder(slots: ScheduleSlot[]): ScheduleSlot | undefined {
+  if (slots.length === 0) return undefined;
+  const now = new Date();
+  const isoToday = now.getDay() === 0 ? 7 : now.getDay();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  let best: ScheduleSlot | undefined;
+  let bestDelta = Infinity;
+  for (const s of slots) {
+    const [h, m] = s.time.split(':').map(Number);
+    const dayDiff = (s.day - isoToday + 7) % 7;
+    let delta = dayDiff * 1440 + (h * 60 + m - nowMin);
+    if (delta <= 0) delta += 7 * 1440;
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = s;
+    }
+  }
+  return best;
+}
 
 type Props = { goalId: string };
 
@@ -71,8 +97,20 @@ export function GoalDetailScreen({ goalId }: Props) {
     );
   }
 
+  const next = nextReminder(goal.schedule.slots);
+
   return (
     <ThemedView style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: goal.name,
+          headerRight: () => (
+            <Pressable onPress={() => router.push(`/goal/${goalId}/edit`)} hitSlop={8}>
+              <ThemedText type="linkPrimary">Edit</ThemedText>
+            </Pressable>
+          ),
+        }}
+      />
       <ScrollView contentContainerStyle={styles.content}>
         <View>
           <ThemedText type="title">{goal.name}</ThemedText>
@@ -82,9 +120,7 @@ export function GoalDetailScreen({ goalId }: Props) {
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             {goal.schedule.slots.length > 0
-              ? goal.schedule.slots
-                  .map((s) => `${WEEKDAYS[s.day - 1]} ${s.label ? `${s.label} ` : ''}${s.time}`)
-                  .join(', ')
+              ? goal.schedule.slots.map(slotText).join(', ')
               : 'No reminders set'}
           </ThemedText>
           {goal.cue ? (
@@ -98,6 +134,15 @@ export function GoalDetailScreen({ goalId }: Props) {
             </ThemedText>
           ) : null}
         </View>
+
+        {next ? (
+          <ThemedView type="backgroundElement" style={styles.nextBox}>
+            <ThemedText type="small" themeColor="textSecondary">
+              {goal.paused ? 'Paused — next would be' : 'Next reminder'}
+            </ThemedText>
+            <ThemedText type="smallBold">{slotText(next)}</ThemedText>
+          </ThemedView>
+        ) : null}
 
         <View style={styles.statsRow}>
           <Stat label="Current streak" value={stats ? `${stats.current}` : '—'} />
@@ -114,18 +159,18 @@ export function GoalDetailScreen({ goalId }: Props) {
           </ThemedText>
         ) : null}
 
-        <Button title="Done ✓" onPress={onDone} loading={completing} />
+        <Button title="Done ✓" onPress={onDone} loading={completing} style={styles.doneHero} />
         <Button
           title={goal.paused ? 'Resume' : 'Pause'}
           variant="secondary"
           onPress={onTogglePause}
         />
-        <Button
-          title="Edit"
-          variant="secondary"
-          onPress={() => router.push(`/goal/${goalId}/edit`)}
-        />
-        <Button title="Delete" variant="danger" onPress={onDelete} />
+
+        <Pressable onPress={onDelete} hitSlop={8} style={styles.deleteLink}>
+          <ThemedText type="small" style={{ color: '#E5484D' }}>
+            Delete goal
+          </ThemedText>
+        </Pressable>
       </ScrollView>
     </ThemedView>
   );
@@ -135,7 +180,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <ThemedView type="backgroundElement" style={styles.stat}>
       <ThemedText type="subtitle">{value}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
+      <ThemedText type="small" themeColor="textSecondary" style={styles.statLabel}>
         {label}
       </ThemedText>
     </ThemedView>
@@ -154,4 +199,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one,
   },
+  statLabel: { textAlign: 'center' },
+  nextBox: {
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
+    gap: Spacing.half,
+  },
+  doneHero: { minHeight: 60 },
+  deleteLink: { alignSelf: 'center', paddingVertical: Spacing.three },
 });
