@@ -23,7 +23,7 @@ export default function RootLayout() {
         </View>
       ) : (
         <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Home' }} />
           <Stack.Screen name="onboarding" options={{ presentation: 'modal', title: 'Welcome' }} />
           <Stack.Screen name="goal/new" options={{ presentation: 'modal', title: 'New Goal' }} />
           <Stack.Screen name="goal/[id]/index" options={{ title: 'Goal' }} />
