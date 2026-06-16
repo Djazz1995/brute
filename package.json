@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~0.2.0-beta.9",
+    "@react-native-community/datetimepicker": "8.4.4",
     "@supabase/supabase-js": "^2.108.2",
     "expo": "~54.0.0",
     "expo-constants": "~18.0.13",
@@ -47,7 +48,8 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:smoke": "node --env-file=.env scripts/smoke-supabase.mjs"
+    "db:smoke": "node --env-file=.env scripts/smoke-supabase.mjs",
+    "db:smoke3": "node --env-file=.env scripts/smoke-phase3.mjs"
   },
   "private": true
 }

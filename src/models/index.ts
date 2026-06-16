@@ -1,6 +1,13 @@
 /** Barrel for all data models. See AGENTS.md §15.2. */
 
-export type { Goal, GoalCategory, RudenessLevel, EscalationSpeed, Schedule } from './goal';
+export type {
+  Goal,
+  GoalCategory,
+  RudenessLevel,
+  EscalationSpeed,
+  Schedule,
+  ScheduleSlot,
+} from './goal';
 export type { EscalationWave, EscalationTactic } from './escalation';
 export type { Completion, CompletionSource, Skip, StreakStats } from './completion';
 export type { Buddy, BuddyInviteStatus } from './buddy';

@@ -9,15 +9,22 @@ export type RudenessLevel = 1 | 2 | 3 | 4;
 export type EscalationSpeed = 'slow' | 'normal' | 'unhinged';
 
 /**
- * When a goal fires.
- * - `days`: ISO weekday numbers (1 = Mon … 7 = Sun) the goal is active.
- * - `timeOfDay`: local "HH:mm".
- * - `intervalHours`: optional "every X hours" mode (AGENTS.md §4.1).
+ * One reminder slot: a weekday + local time. One slot = one notification
+ * trigger (Phase 5). Different times per day and multiple times per day are
+ * both just multiple slots (AGENTS.md §4.1).
+ * - `day`: ISO weekday (1 = Mon … 7 = Sun).
+ * - `time`: local "HH:mm".
+ * - `label`: optional name for category-specific framing, e.g. "Lunch",
+ *   "Bedtime" (diet/sleep). Feeds Wave-1 copy (Phase 6).
  */
+export type ScheduleSlot = {
+  day: number;
+  time: string;
+  label?: string;
+};
+
 export type Schedule = {
-  days: number[];
-  timeOfDay: string;
-  intervalHours?: number;
+  slots: ScheduleSlot[];
 };
 
 export type Goal = {
@@ -27,6 +34,12 @@ export type Goal = {
   category: GoalCategory;
   /** Concrete trigger text used in Wave 1, e.g. "bag by the door" (§4.1). */
   cue?: string;
+  /**
+   * User-declared excuses/blockers ("too tired", "no time"). Roast-callback
+   * fuel (§5 "it learns you"); the excuse is fair game, never the person
+   * (§3.1). Passes the §9.3 safety filter before any generation use.
+   */
+  blockers: string[];
   schedule: Schedule;
   rudenessLevel: RudenessLevel;
   escalationSpeed: EscalationSpeed;

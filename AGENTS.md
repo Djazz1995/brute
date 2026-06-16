@@ -112,7 +112,8 @@ Each goal has:
 - **Name** — e.g. "Gym", "Study Session", "Clean the Bathroom"
 - **Category** — Gym / Study / Chores / Diet / Sleep / Custom
 - **Cue** (NEW) — optional concrete trigger text ("bag by the door") used in Wave 1
-- **Schedule** — specific days, time of day, or interval (every X hours)
+- **Blockers** (NEW) — optional list of the user's go-to excuses ("too tired", "no time"). Roast-callback fuel (§5 "it learns you"); the excuse is fair game, the person never (§3.1). Must clear the §9.3 filter before any generation use
+- **Schedule** — a list of reminder slots, each a (weekday + time). Supports different times per day and multiple times per day (e.g. diet meals). Interval mode ("every X hours") deferred
 - **Rudeness level** — per goal (see Section 6)
 - **Escalation speed** — Slow / Normal / Unhinged
 - **Accountability buddy** (NEW, optional) — a contact who witnesses completions/skips

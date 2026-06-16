@@ -34,15 +34,16 @@ are the riskiest subsystem and the real product — don't leave too late, don't 
 - [x] `.env` wired (gitignored) — real project URL + publishable key.
 - **Done when:** can read/write a goal row. — ✅ `npm run db:smoke` passes: anon sign-in → insert → read → delete.
 
-## Phase 3 — Core vertical slice (the proof)
+## Phase 3 — Core vertical slice (the proof) — code-complete (UI sim run pending)
 
 Loop: **create goal → home list → tap Done → streak updates.**
 
-- [ ] `GoalService` (create/list/get/update/delete/pause).
-- [ ] `CompletionService` (complete + streak math → `StreakStats`).
-- [ ] `useGoals`, `useGoal`, `useComplete`, `useStreak`.
-- [ ] Screens: Home/dashboard, Goal create/edit, Goal detail.
-- **Done when:** real round-trip, no mocks. Whole stack proven.
+- [x] `GoalService` (list/get/create/update/setPaused/remove) — `src/services/goalService.ts`, snake↔camel mapper.
+- [x] `CompletionService` (complete + streak math → `StreakStats`) — `src/services/completionService.ts`. Streaks from distinct completion days; rates = completions/(completions+skips) per window; `ignoredCount` TODO Phase 5.
+- [x] Hooks `useGoals`, `useGoal`, `useComplete`, `useStreak` (+ `useSession` session gate in root layout).
+- [x] Screens: Home (list + new), Goal create/edit (form, prefill on edit), Goal detail (stats + Done/Pause/Edit/Delete). Shared `Button` component.
+- **Done when:** real round-trip, no mocks. — data path ✅ verified: `npm run db:smoke3` (goal → completion → read → cascade, RLS holds). tsc/lint/web-export green.
+  - [ ] Visual run in iOS/Android simulator (`npm run ios`) — UI not yet exercised on a device.
 
 ## Phase 4 — Engagement mechanics
 
@@ -64,6 +65,7 @@ Loop: **create goal → home list → tap Done → streak updates.**
 - [ ] `ai/provider.ts` swappable interface (bake-off winner).
 - [ ] Batch/cron job → fills `roast_lines` shared pool (cat × level × wave).
 - [ ] `RoastService.getLine()` — read pool + string-interpolate cue/name/callback (NO live AI v1).
+- [ ] Wire `goal.blockers` (user-declared excuses) as `{excuse}` callback slots in stakes/roast waves — **must pass the §9.3 safety filter first** (excuse OK, person/mental-health never). Captured in Phase 3.
 - [ ] Post-generation safety filter (§9.3) + blocklist + kill switch.
 - **Done when:** notifications pull real cached roast lines, filtered.
 
