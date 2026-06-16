@@ -45,6 +45,11 @@ Loop: **create goal → home list → tap Done → streak updates.**
 - **Done when:** real round-trip, no mocks. — data path ✅ verified: `npm run db:smoke3` (goal → completion → read → cascade, RLS holds). tsc/lint/web-export green.
   - [ ] Visual run in iOS/Android simulator (`npm run ios`) — UI not yet exercised on a device.
 
+### Phase 3 polish (UI, no new deps)
+
+- [ ] Goal-detail hierarchy: **Done** as hero, **Edit** → header-right button, **Delete** demoted (text link / overflow), Pause secondary. Less flat, safer destructive action.
+- [ ] "**Next reminder: Mon 07:00**" on goal detail — soonest upcoming slot from `schedule.slots` (pure date math, no notification engine needed).
+
 ## Phase 4 — Engagement mechanics
 
 - [ ] `SkipService` + skip flow screen (friction: reason → countdown → roast, §4.5).
@@ -58,6 +63,7 @@ Loop: **create goal → home list → tap Done → streak updates.**
 - [ ] `EscalationService` — tactic ladder, wave→tactic map (§3.3).
 - [ ] `NotificationService` — schedule per goal, handle tap → route to complete/skip.
 - [ ] `fcm.ts` + Supabase cron Edge Function to trigger at goal times (§8.2).
+- [ ] Today's per-goal **status (done / pending / skipped)** on home + goal detail — needs scheduled-vs-acted tracking (same source that fills `StreakStats.ignoredCount`, stubbed in Phase 3).
 - **Done when:** ignored goal escalates through waves; tap deep-links into app.
 
 ## Phase 6 — Roast content pipeline (§8.4)
