@@ -2,6 +2,20 @@
 -- Every user-owned table is keyed to auth.uid() and locked down with RLS.
 -- roast_lines is a SHARED pool (§8.4): clients read, only the service-role
 -- batch job writes.
+--
+-- Idempotent: drops prior RoastMode objects first so it can be re-run safely.
+
+-- ---------------------------------------------------------------------------
+-- Teardown (safe re-run) — drops only RoastMode-owned objects.
+-- ---------------------------------------------------------------------------
+drop trigger if exists on_auth_user_created on auth.users;
+drop function if exists public.handle_new_user();
+drop table if exists public.completions cascade;
+drop table if exists public.skips cascade;
+drop table if exists public.goals cascade;
+drop table if exists public.buddies cascade;
+drop table if exists public.roast_lines cascade;
+drop table if exists public.profiles cascade;
 
 -- ---------------------------------------------------------------------------
 -- profiles : per-user global defaults + tier (§7.2, §12)

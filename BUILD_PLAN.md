@@ -24,14 +24,15 @@ are the riskiest subsystem and the real product — don't leave too late, don't 
 - [x] Nav skeleton — root Stack + `(tabs)` group, stubs for all 11 §14 pages (routing in `src/app`, UI in `src/screens` via `ScreenPlaceholder`).
 - **Done when:** app boots, navigate between blank screens. — verified: tsc clean, lint exit 0, web + iOS bundles export.
 
-## Phase 2 — Data layer — code-complete (needs cloud project to verify)
+## Phase 2 — Data layer ✅ DONE (round-trip verified)
 
 - [x] `src/models` — all §15.2 shapes (one file per model + barrel `index.ts`).
-- [x] Schema: `profiles, goals, completions, skips, buddies, roast_lines` — `supabase/migrations/0001_init.sql`. (☐ apply to a real cloud project.)
+- [x] Schema: `profiles, goals, completions, skips, buddies, roast_lines` — `supabase/migrations/0001_init.sql` (idempotent). Applied to cloud project.
 - [x] RLS policies (owner-only CRUD; `roast_lines` read-only to authenticated). In the migration.
 - [x] `src/lib/supabase.ts` client — web-safe chunked SecureStore adapter, `persistSession`, `autoRefreshToken`.
-- [x] Auth — `src/lib/auth.ts` `ensureSession()` anon sign-in + profile auto-create trigger.
-- **Done when:** can read/write a goal row from a script/test. — script `scripts/smoke-supabase.mjs` (`npm run db:smoke`); ☐ **run pending cloud project + `.env` creds + "anonymous sign-ins" enabled**.
+- [x] Auth — `src/lib/auth.ts` `ensureSession()` anon sign-in + profile auto-create trigger. Anonymous sign-ins enabled in dashboard.
+- [x] `.env` wired (gitignored) — real project URL + publishable key.
+- **Done when:** can read/write a goal row. — ✅ `npm run db:smoke` passes: anon sign-in → insert → read → delete.
 
 ## Phase 3 — Core vertical slice (the proof)
 
