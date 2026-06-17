@@ -28,6 +28,9 @@ type GoalRow = {
   escalation_speed: EscalationSpeed;
   buddy_id: string | null;
   collection_id: string | null;
+  target_value: number | null;
+  unit: string | null;
+  archived: boolean;
   paused: boolean;
   created_at: string;
 };
@@ -45,6 +48,9 @@ function mapGoal(row: GoalRow): Goal {
     escalationSpeed: row.escalation_speed,
     buddyId: row.buddy_id ?? undefined,
     collectionId: row.collection_id ?? undefined,
+    targetValue: row.target_value ?? undefined,
+    unit: row.unit ?? undefined,
+    archived: row.archived ?? false,
     paused: row.paused,
     createdAt: row.created_at,
   };
@@ -61,6 +67,8 @@ export type GoalInput = {
   escalationSpeed: EscalationSpeed;
   buddyId?: string;
   collectionId?: string;
+  targetValue?: number;
+  unit?: string;
 };
 
 function toRow(input: GoalInput) {
@@ -74,14 +82,29 @@ function toRow(input: GoalInput) {
     escalation_speed: input.escalationSpeed,
     buddy_id: input.buddyId ?? null,
     collection_id: input.collectionId ?? null,
+    target_value: input.targetValue ?? null,
+    unit: input.unit ?? null,
   };
 }
 
 export const goalService = {
+  /** Active goals only (archived excluded). */
   async list(): Promise<Goal[]> {
     const { data, error } = await supabase
       .from('goals')
       .select('*')
+      .eq('archived', false)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data as GoalRow[]).map(mapGoal);
+  },
+
+  /** Archived goals — history kept, off the active list (§4.7). */
+  async listArchived(): Promise<Goal[]> {
+    const { data, error } = await supabase
+      .from('goals')
+      .select('*')
+      .eq('archived', true)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data as GoalRow[]).map(mapGoal);
@@ -120,6 +143,17 @@ export const goalService = {
     const { data, error } = await supabase
       .from('goals')
       .update({ paused })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return mapGoal(data as GoalRow);
+  },
+
+  async setArchived(id: string, archived: boolean): Promise<Goal> {
+    const { data, error } = await supabase
+      .from('goals')
+      .update({ archived })
       .eq('id', id)
       .select()
       .single();

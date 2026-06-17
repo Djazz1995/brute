@@ -9,11 +9,11 @@ export function useComplete() {
   const [error, setError] = useState<Error>();
 
   const complete = useCallback(
-    async (goalId: string, source: CompletionSource = 'tap', witnessed = false) => {
+    async (goalId: string, source: CompletionSource = 'tap', witnessed = false, amount?: number) => {
       setCompleting(true);
       setError(undefined);
       try {
-        return await completionService.complete(goalId, source, witnessed);
+        return await completionService.complete(goalId, source, witnessed, amount);
       } catch (e) {
         setError(e as Error);
         throw e;

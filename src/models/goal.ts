@@ -1,6 +1,6 @@
 /** Goal and its value types. See AGENTS.md §4.1, §6, §15.2. */
 
-export type GoalCategory = 'gym' | 'study' | 'chores' | 'diet' | 'sleep' | 'custom';
+export type GoalCategory = 'gym' | 'study' | 'chores' | 'diet' | 'water' | 'sleep' | 'custom';
 
 /** Rudeness tier (AGENTS.md §6). 1 = Mild Disappointment … 4 = Unhinged. */
 export type RudenessLevel = 1 | 2 | 3 | 4;
@@ -23,8 +23,17 @@ export type ScheduleSlot = {
   label?: string;
 };
 
+/**
+ * A goal's cadence. Two modes (§4.1):
+ * - **Fixed**: `slots` drive specific (weekday + time) reminders.
+ * - **Weekly target**: `weeklyTarget` = "N times per week, any day" when the
+ *   goal isn't clock-bound. `slots` may still hold optional nudge times.
+ * Both can coexist, but streak math keys off `weeklyTarget` when present.
+ */
 export type Schedule = {
   slots: ScheduleSlot[];
+  /** "N times per week, any day" (§4.1). Unset = fixed-slot goal. */
+  weeklyTarget?: number;
 };
 
 export type Goal = {
@@ -47,6 +56,16 @@ export type Goal = {
   buddyId?: string;
   /** User-named grouping this goal belongs to (§4.1 Collection), if any. */
   collectionId?: string;
+  /**
+   * Quantified target (§4.1): measurable goal like 20 pages / 2 L. Completions
+   * log an `amount`; partial counts feed the roast (§4.3, §6). Unset = plain
+   * done/skip goal.
+   */
+  targetValue?: number;
+  /** Unit label for `targetValue`, e.g. "pages", "L", "min". */
+  unit?: string;
+  /** Archived goals keep history but leave the active list (§4.7). */
+  archived: boolean;
   /** Paused goals keep history but fire no notifications (§7.1). */
   paused: boolean;
   createdAt: string;

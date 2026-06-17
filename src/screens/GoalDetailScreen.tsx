@@ -1,6 +1,14 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
@@ -9,6 +17,7 @@ import { Spacing } from '@/constants/theme';
 import { useComplete } from '@/hooks/use-complete';
 import { useGoal } from '@/hooks/use-goal';
 import { useStreak } from '@/hooks/use-streak';
+import { useTheme } from '@/hooks/use-theme';
 import type { ScheduleSlot } from '@/models';
 import { goalService } from '@/services/goalService';
 
@@ -49,10 +58,12 @@ type Props = { goalId: string };
 
 export function GoalDetailScreen({ goalId }: Props) {
   const router = useRouter();
+  const theme = useTheme();
   const { data: goal, loading, error, refetch: refetchGoal } = useGoal(goalId);
   const { data: stats, refetch: refetchStats } = useStreak(goalId);
   const { complete, completing } = useComplete();
   const [justDone, setJustDone] = useState(false);
+  const [amountDraft, setAmountDraft] = useState('');
 
   // Refresh stats/goal when returning (e.g. after a skip or edit).
   useFocusEffect(
@@ -63,13 +74,31 @@ export function GoalDetailScreen({ goalId }: Props) {
   );
 
   async function onDone() {
+    const quantified = typeof goal?.targetValue === 'number';
+    let amount: number | undefined;
+    if (quantified) {
+      const parsed = Number(amountDraft);
+      if (!amountDraft.trim() || Number.isNaN(parsed) || parsed < 0) {
+        Alert.alert('Enter an amount', `How many ${goal?.unit ?? 'units'} did you do?`);
+        return;
+      }
+      amount = parsed;
+    }
     try {
-      await complete(goalId, 'tap', Boolean(goal?.buddyId));
+      await complete(goalId, 'tap', Boolean(goal?.buddyId), amount);
       setJustDone(true);
+      setAmountDraft('');
       await refetchStats();
     } catch (e) {
       Alert.alert('Could not mark done', (e as Error).message);
     }
+  }
+
+  async function onToggleArchive() {
+    if (!goal) return;
+    await goalService.setArchived(goalId, !goal.archived);
+    if (!goal.archived) router.back();
+    else refetchGoal();
   }
 
   function onDelete() {
@@ -138,10 +167,17 @@ export function GoalDetailScreen({ goalId }: Props) {
             {goal.paused ? ' · paused' : ''}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {goal.schedule.slots.length > 0
-              ? goal.schedule.slots.map(slotText).join(', ')
-              : 'No reminders set'}
+            {goal.schedule.weeklyTarget
+              ? `${goal.schedule.weeklyTarget}× per week`
+              : goal.schedule.slots.length > 0
+                ? goal.schedule.slots.map(slotText).join(', ')
+                : 'No reminders set'}
           </ThemedText>
+          {typeof goal.targetValue === 'number' ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              Target: {goal.targetValue} {goal.unit ?? ''}
+            </ThemedText>
+          ) : null}
           {goal.cue ? (
             <ThemedText type="small" themeColor="textSecondary">
               Cue: {goal.cue}
@@ -169,7 +205,10 @@ export function GoalDetailScreen({ goalId }: Props) {
         ) : null}
 
         <View style={styles.statsRow}>
-          <Stat label="Current streak" value={stats ? `${stats.current}` : '—'} />
+          <Stat
+            label={stats?.streakUnit === 'week' ? 'Streak (weeks)' : 'Current streak'}
+            value={stats ? `${stats.current}` : '—'}
+          />
           <Stat label="Longest" value={stats ? `${stats.longest}` : '—'} />
           <Stat
             label="7d rate"
@@ -181,6 +220,22 @@ export function GoalDetailScreen({ goalId }: Props) {
           <ThemedText type="smallBold" style={{ color: '#30A46C' }}>
             Logged. The couch loses this round.
           </ThemedText>
+        ) : null}
+
+        {typeof goal.targetValue === 'number' ? (
+          <View style={styles.amountRow}>
+            <TextInput
+              value={amountDraft}
+              onChangeText={setAmountDraft}
+              placeholder={`How many ${goal.unit ?? 'units'}? (target ${goal.targetValue})`}
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="numeric"
+              style={[
+                styles.amountInput,
+                { color: theme.text, backgroundColor: theme.backgroundElement },
+              ]}
+            />
+          </View>
         ) : null}
 
         <Button title="Done ✓" onPress={onDone} loading={completing} style={styles.doneHero} />
@@ -195,6 +250,12 @@ export function GoalDetailScreen({ goalId }: Props) {
           title={goal.paused ? 'Resume' : 'Pause'}
           variant="secondary"
           onPress={onTogglePause}
+        />
+
+        <Button
+          title={goal.archived ? 'Unarchive' : 'Archive'}
+          variant="secondary"
+          onPress={onToggleArchive}
         />
 
         <Pressable onPress={onDelete} hitSlop={8} style={styles.deleteLink}>
@@ -243,5 +304,13 @@ const styles = StyleSheet.create({
     color: '#3c87f7',
   },
   doneHero: { minHeight: 60 },
+  amountRow: { flexDirection: 'row' },
+  amountInput: {
+    flex: 1,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    fontSize: 16,
+  },
   deleteLink: { alignSelf: 'center', paddingVertical: Spacing.three },
 });

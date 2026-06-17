@@ -73,26 +73,31 @@ Loop: **create goal → home list → tap Done → streak updates.**
 
 > Buddy **push delivery** on complete/skip needs FCM infra → tracked in Phase 5. Data (link + witnessed flag) already persists here.
 
-## Phase 4.5 — Goal collections (user grouping) — code-complete (migration apply + smoke pending)
+## Phase 4.5 — Goal collections (user grouping) ✅ DONE
 
 User-named ambitions that group goals (e.g. "Getting fit", "Run a marathon", "Build a side project"). Distinct from §4.1 `category` (gym/study/… — sets roast tone). A goal has one category + an optional collection.
 
 - [x] `Collection` model + `collectionId?` on `Goal` (`src/models`); wired through `goalService` (row map + input).
-- [x] Schema: `collections` table + `goals.collection_id` FK (nullable, `on delete set null`) — `supabase/migrations/0003_add_collections.sql`, owner-only RLS. **Not yet applied to cloud (needs dashboard SQL run — only anon key available locally).**
+- [x] Schema: `collections` table + `goals.collection_id` FK (nullable, `on delete set null`) — `supabase/migrations/0003_add_collections.sql`, owner-only RLS. Applied to cloud.
 - [x] `CollectionService` (list/create/rename/remove) + `useCollections`. Delete = ungroup goals (FK set null), not delete them.
 - [x] UI: pick/create collection in goal form; Home groups goals by collection (SectionList); Collections manage screen reached from Settings.
 - [ ] Collection filter on stats + agenda — deferred to Phase 5 (those screens don't exist yet).
-- **Done when:** create a collection, assign goals, Home shows goals grouped under it. — code + tsc/lint green; `npm run db:smoke4_5` written (create + group + rename + ungroup-on-delete), **passes once migration 0003 is applied to cloud.**
+- **Done when:** create a collection, assign goals, Home shows goals grouped under it. — ✅ code + tsc/lint green; `npm run db:smoke4_5` passes (create + group + rename + ungroup-on-delete, RLS holds).
 
-## Phase 4.6 — Habit-tracker depth
+## Phase 4.6 — Habit-tracker depth ✅ DONE (migrations applied; UI sim run pending)
 
 The tracker fundamentals standard habit apps have, and that give the roast better fuel. Extends existing `Goal` / `Schedule` / `CompletionService` (Phases 2–3).
 
-- [ ] **Flexible-frequency goals** — "N times per week, any day" alongside fixed weekday+time slots. Add a frequency mode to `Schedule` (`fixed` slots vs `weeklyTarget: N`). Streak math counts per-period target hit, not per-slot.
-- [ ] **Quantified habits** — optional measurable target on a goal (`targetValue` + `unit`, e.g. 20 pages / 2 L). Completion logs an `amount`; partial counts allowed. `Completion` gains `amount?`. Drives partial-credit streaks **and** roast fuel (see Phase 6).
-- [ ] **Streak freeze / rest day** — protect the streak from one miss instead of weaponizing it (anti-rage-quit, the §5 loss-aversion lever done right). Either a planned weekly rest day (doesn't break streak) or N freezes/period. Streak math treats a freeze/rest day as non-breaking. Free-tier cap on freezes; more = paid (upgrade lever).
-- [ ] **Archive / completed-goal history** — archive a finished or paused-forever goal without deleting its history; browsable past completions (identity lever, §3.2). `Goal` gains `archived` state.
-- **Done when:** a weekly-target goal tracks correctly; a quantified goal logs a partial amount; a streak survives a rest day; an archived goal leaves history intact.
+- [x] **Flexible-frequency goals** — "N times per week, any day" via `Schedule.weeklyTarget`; cadence toggle in goal form. `completionService` computes **week-based** streaks (Mon-anchored hit weeks) when set, else day-based. `StreakStats.streakUnit` labels day/week.
+- [x] **Quantified habits** — `targetValue` + `unit` on `Goal`; `Completion.amount`. Goal form takes target+unit; goal detail logs amount on Done (validates a number). Partial counts allowed. Roast fuel wired in Phase 6.
+- [x] **Schedule-aware streaks (replaced standalone rest day)** — day-streak math bridges any **non-scheduled** weekday: the goal's picked days define what counts, every other day is implicitly a rest day. Fixes multi-day goals (Mon/Wed/Fri no longer stuck at streak 1) and makes a separate rest-day field redundant. `Goal.restDay` removed; dropped in migration `0005_drop_rest_day.sql`. (Optional explicit freezes / free-tier cap → Phase 7 billing if wanted.)
+- [x] **Archive / completed-goal history** — `Goal.archived`; `goalService.list()` excludes archived, `listArchived()` + `setArchived()` added; archive/unarchive button on goal detail. Delete still removes history; archive keeps it.
+- [x] Migration `supabase/migrations/0004_habit_depth.sql` (goals: target_value/unit/rest_day/archived; completions: amount; partial active index). Applied to cloud.
+- [x] **Per-category soft prefill** — `CATEGORY_CONFIG` in the goal form pre-selects schedule mode, measure on/off + default unit/target, default days/time, and copy per category (all still editable; `custom` = no prefill). Chores hides the measure field. Foreshadows Phase 8 habit templates.
+- [x] **Diet split → new `water` category** — Diet = meal timing (binary slots); Water = daily quantity (L), measure-on by default. Migration `0006_add_water_category.sql` (updates goals + roast_lines category check constraints). Applied to cloud.
+- [x] Migration `0005_drop_rest_day.sql` — drops the unused column (code already schedule-aware). Applied to cloud.
+- [x] **Goal form refactor** — extracted into descriptor-driven field-blocks (`src/screens/goal-form/{config,fields,blocks}.tsx`); adding a goal type = a `GOAL_TYPES` entry (+ a block component only for a genuinely new field). Gym + Chores omit the measure block (no stable per-session number).
+- **Done when:** a weekly-target goal tracks correctly; a quantified goal logs a partial amount; a streak survives a rest day; an archived goal leaves history intact. — ✅ code + tsc/lint green; `npm run db:smoke4_6` passes (quantified amount + weekly-target + rest_day + archive filtering, RLS holds). Streak-math correctness (week mode, rest-day bridge) is pure-function logic in `completionService` — UI sim run still pending.
 
 ## Phase 5 — Notifications + escalation (own subsystem)
 

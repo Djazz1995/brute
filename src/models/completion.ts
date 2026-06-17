@@ -9,6 +9,12 @@ export type Completion = {
   source: CompletionSource;
   /** Whether an accountability buddy was notified (§4.6). */
   witnessed: boolean;
+  /**
+   * Logged amount for quantified goals (§4.1, §4.3), e.g. 4 (pages). Partial
+   * counts allowed; feeds the partial-completion roast (§6). Unset for plain
+   * done/skip goals.
+   */
+  amount?: number;
 };
 
 export type Skip = {
@@ -23,6 +29,8 @@ export type Skip = {
 export type StreakStats = {
   current: number;
   longest: number;
+  /** What a streak unit counts: calendar days, or weeks for weekly-target goals. */
+  streakUnit: 'day' | 'week';
   completionRate7: number;
   completionRate30: number;
   completionRate90: number;
