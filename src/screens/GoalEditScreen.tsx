@@ -19,8 +19,10 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useBuddies } from '@/hooks/use-buddies';
+import { useCollections } from '@/hooks/use-collections';
 import { useGoal } from '@/hooks/use-goal';
 import type { EscalationSpeed, GoalCategory, RudenessLevel, ScheduleSlot } from '@/models';
+import { collectionService } from '@/services/collectionService';
 import { goalService } from '@/services/goalService';
 
 const CATEGORIES: GoalCategory[] = ['gym', 'study', 'chores', 'diet', 'sleep', 'custom'];
@@ -74,6 +76,7 @@ export function GoalEditScreen({ goalId }: Props) {
   const theme = useTheme();
   const { data: existing } = useGoal(goalId);
   const { data: buddies } = useBuddies();
+  const { data: collections, refetch: refetchCollections } = useCollections();
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState<GoalCategory>('gym');
@@ -87,6 +90,8 @@ export function GoalEditScreen({ goalId }: Props) {
   const [rudeness, setRudeness] = useState<RudenessLevel>(3);
   const [speed, setSpeed] = useState<EscalationSpeed>('normal');
   const [buddyId, setBuddyId] = useState<string>();
+  const [collectionId, setCollectionId] = useState<string>();
+  const [collectionDraft, setCollectionDraft] = useState('');
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [timeDraft, setTimeDraft] = useState<Date>(() => timeToDate('07:00'));
   const [saving, setSaving] = useState(false);
@@ -108,6 +113,7 @@ export function GoalEditScreen({ goalId }: Props) {
     setRudeness(existing.rudenessLevel);
     setSpeed(existing.escalationSpeed);
     setBuddyId(existing.buddyId);
+    setCollectionId(existing.collectionId);
   }, [existing]);
 
   // Default the builder's label + time to the category's first option.
@@ -161,6 +167,20 @@ export function GoalEditScreen({ goalId }: Props) {
     setBlockers((cur) => cur.filter((x) => x !== v));
   }
 
+  async function addCollection() {
+    const v = collectionDraft.trim();
+    if (!v) return;
+    setError(undefined);
+    try {
+      const created = await collectionService.create(v);
+      setCollectionDraft('');
+      await refetchCollections();
+      setCollectionId(created.id);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   async function onSave() {
     if (!name.trim()) {
       setError('Name is required.');
@@ -181,6 +201,7 @@ export function GoalEditScreen({ goalId }: Props) {
       rudenessLevel: rudeness,
       escalationSpeed: speed,
       buddyId,
+      collectionId,
     };
     try {
       if (goalId) await goalService.update(goalId, input);
@@ -405,6 +426,40 @@ export function GoalEditScreen({ goalId }: Props) {
               ))}
             </View>
           )}
+        </Field>
+
+        <Field label="Collection (optional)">
+          <ThemedText type="small" themeColor="textSecondary">
+            Group goals under a bigger ambition, e.g. “Run a marathon”.
+          </ThemedText>
+          <View style={styles.chips}>
+            <Chip text="None" active={!collectionId} onPress={() => setCollectionId(undefined)} />
+            {collections.map((c) => (
+              <Chip
+                key={c.id}
+                text={c.name}
+                active={collectionId === c.id}
+                onPress={() => setCollectionId(c.id)}
+              />
+            ))}
+          </View>
+          <View style={styles.blockerEntry}>
+            <TextInput
+              value={collectionDraft}
+              onChangeText={setCollectionDraft}
+              onSubmitEditing={addCollection}
+              placeholder="New collection"
+              placeholderTextColor={theme.textSecondary}
+              returnKeyType="done"
+              style={[inputStyle, { flex: 1 }]}
+            />
+            <Button
+              title="Add"
+              variant="secondary"
+              onPress={addCollection}
+              style={styles.addBtn}
+            />
+          </View>
         </Field>
 
         {error ? (

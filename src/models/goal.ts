@@ -45,6 +45,8 @@ export type Goal = {
   escalationSpeed: EscalationSpeed;
   /** Accountability buddy witnessing this goal (§4.6), if any. */
   buddyId?: string;
+  /** User-named grouping this goal belongs to (§4.1 Collection), if any. */
+  collectionId?: string;
   /** Paused goals keep history but fire no notifications (§7.1). */
   paused: boolean;
   createdAt: string;

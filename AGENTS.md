@@ -52,6 +52,10 @@ RoastMode is a mobile app (iOS & Android) that uses AI to motivate users through
 
 To be the app people screenshot and share before they've opened it twice — and keep because it actually gets them off the couch. Every notification should be postable on its own. Harsh-but-funny is the acquisition moat; real behavior change is the retention moat.
 
+**Underneath, this is a habit tracker.** The streaks, schedules, completion logging, and day/week views *are* a habit-tracking app — that's the substrate that actually moves people toward goals (habits compound; one funny push does not). The roast is the motivation layer bolted on top of a competent tracker, not a replacement for one. If the tracking fundamentals are weak, no amount of comedy saves it. Build the habit-tracker core to stand on its own, then let the roast make it the one people don't ignore.
+
+**Roast is the trojan horse, not the cargo.** Be honest about what the roast does and doesn't do: comedy reliably sells the *install* (screenshottable, free marketing, proven by Carrot / the Duolingo owl) but does **not** retain — "AI roast" is a weekend-clonable gimmick, and for many users raw mockery triggers shame → mute → uninstall. The defensible product is the behavior-change engine and the **social witness** (Section 4.6) underneath the jokes; the roast is the delivery vehicle that gets that engine in the door. The failure mode to design against is building a comedy-generator that nags, when the winner is a behavior-engine that happens to be funny (Section 3). The whole acquisition thesis is gated on Section 0 — if roast posts don't travel organically as standalone content, this does not become an app.
+
 ### 1.3 Core Premise
 
 - User sets a goal (e.g. "Gym, Monday/Wednesday/Friday, 7am")
@@ -110,10 +114,11 @@ Each wave maps to a lever in 3.2. The harshness is _functional_ — a nudge ladd
 Each goal has:
 
 - **Name** — e.g. "Gym", "Study Session", "Clean the Bathroom"
-- **Category** — Gym / Study / Chores / Diet / Sleep / Custom
+- **Category** — Gym / Study / Chores / Diet / Sleep / Custom (sets roast tone; NOT the same as a user **Collection** — the optional named grouping like "Run a marathon" that spans multiple goals)
 - **Cue** (NEW) — optional concrete trigger text ("bag by the door") used in Wave 1
 - **Blockers** (NEW) — optional list of the user's go-to excuses ("too tired", "no time"). Roast-callback fuel (§5 "it learns you"); the excuse is fair game, the person never (§3.1). Must clear the §9.3 filter before any generation use
-- **Schedule** — a list of reminder slots, each a (weekday + time). Supports different times per day and multiple times per day (e.g. diet meals). Interval mode ("every X hours") deferred
+- **Schedule** — fixed reminder slots, each a (weekday + time) — supports different/multiple times per day (e.g. diet meals) — **or** a flexible **weekly target** ("N times per week, any day") when the goal isn't clock-bound. Interval mode ("every X hours") deferred
+- **Quantified target** (NEW, optional) — a measurable goal (`targetValue` + `unit`, e.g. 20 pages / 2 L). Completion logs an amount; partial counts allowed and become roast fuel (§4.3, §6). Plain done/skip goals leave this unset
 - **Rudeness level** — per goal (see Section 6)
 - **Escalation speed** — Slow / Normal / Unhinged
 - **Accountability buddy** (NEW, optional) — a contact who witnesses completions/skips
@@ -132,6 +137,7 @@ Driven by the Section 3.3 tactic ladder. All copy AI-generated (Claude API) with
 ### 4.3 Completion & Self-Report
 
 - One-tap "Done" from notification or app marks the goal complete, updates streak.
+- **Quantified goals** (§4.1) log an **amount** instead of a bare tap ("logged 4 pages"). Partial counts are allowed and tracked — and feed the roast: the AI mocks the ratio, not just the skip (a low partial is a funnier surface than a clean miss). Tone is roast-the-effort, never the person (§3.1); exact copy comes from the cached pool, not fixed here.
 - If an accountability buddy is set, completion (and skips) are shared to them.
 - **Photo verification is NOT in v0** — see Section 4.4 and Section 10.
 
@@ -166,7 +172,9 @@ This is the retention engine, not a nice-to-have. Comedy gets users in; a watchi
 ### 4.7 Progress Tracking
 
 Per goal: current/longest streak, completion rate (7/30/90d), completions vs skips vs ignored, "roasts received" badge, timeline.
-Overall: all goals at a glance (done/pending/skipped), weekly summary notification (v1.1).
+Overall: all goals at a glance (done/pending/skipped), **agenda / calendar day-view** (pick a day → that day's goals + status), **stats screen** (per-day done-vs-not, streak, 7-day week grid), weekly summary notification (v1.1).
+
+**Streak freeze / rest day (NEW).** One miss must not nuke a long streak — that turns the loss-aversion lever into a rage-quit trigger. Protect the streak with either a **planned weekly rest day** (scheduled, doesn't break the streak) or a small number of **freezes per period** (auto or manual, consumes a freeze instead of breaking). Free tier gets a low freeze cap; more freezes are a paid perk (§12 upgrade lever). The roast still acknowledges it ("Rest day. Convenient."), but the streak survives.
 
 ### 4.8 Social Sharing
 
@@ -176,13 +184,13 @@ Every notification and verdict generates a shareable, watermarked card. One-tap 
 
 ## 5. Retention Strategy (NEW — beating the day-14 novelty cliff)
 
-The known failure mode: install → screenshot → share → delete in two weeks. Defenses, in order of power:
+The known failure mode: install → screenshot → share → delete in two weeks. **The roast does nothing to defend against this** — it is an acquisition mechanic, and counting on it for retention is the central strategic error to avoid. Defenses, in order of power:
 
 1. **It actually works.** Behavioral levers (Section 3) drive real completions; users keep the app that gets results. Outcome retention > joke retention.
-2. **Social witness (Section 4.6).** A human watching is stickier than any AI line.
+2. **Social witness (Section 4.6).** A human watching is stickier than any AI line. **This is the moat** — the hardest part for a clone to copy and the strongest day-14 defense. Protect its priority in the build; never let it slip to a "nice-to-have."
 3. **It learns you.** Callbacks to the user's _specific_ excuses sharpen over weeks → becomes "your" roaster; generic clones can't replace it. This is the switching cost.
 4. **Freshness engine.** Rotate personas, unlock new "characters"/lore over time, seasonal events — so the comedy never feels on loop.
-5. **Variable reward + streak loss-aversion.** Unpredictable verdicts + visible streak you don't want to break.
+5. **Variable reward + streak loss-aversion.** Unpredictable verdicts + visible streak you don't want to break. **Streak freeze / rest day (§4.7) is part of this lever, not a softening of it** — protecting a long streak from a single miss keeps loss-aversion motivating instead of flipping it into "I broke it, why bother" uninstall.
 6. **Identity.** Reinforce "you're becoming someone who shows up."
 
 Retention target stays D7 40%+ but is explicitly treated as the primary product risk, validated with the stripped MVP before scaling spend.
@@ -297,16 +305,20 @@ AI generating "brutal" content is a brand/store gun, especially Tier 4. Controls
 
 **Include:**
 
-- Goal creation (up to 5 goals) with cue field
+- Goal creation (up to 5 goals) with cue field, **fixed schedule or weekly-target frequency, optional quantified target**
+- **Optional Collections** — user-named groupings spanning goals (§4.1)
 - Push notifications with AI-generated copy
 - **Tactic-ladder escalation (3–4 waves, Section 3.3)**
-- Self-report completion (tap)
+- **Daily-digest roast** at day-start (§4.2-adjacent)
+- Self-report completion (tap), **amount logging for quantified goals + partial-completion roast (§4.3)**
 - **Minimal social accountability buddy (Section 4.6)**
 - Rudeness levels (all 4) with post-generation safety filter
-- Basic streak tracking
+- Basic streak tracking, **streak freeze / rest day (§4.7)**
+- **Agenda / calendar day-view + stats screen with week grid (§4.7)**
+- **Archive / completed-goal history (§4.7)**
 - Skip mechanic with friction
 - Shareable notification cards
-- Onboarding flow
+- Onboarding flow **with habit templates**
 - AI cost controls: cached line pool + free-tier caps (Section 8.4)
 
 **Defer to v1.1+:**
@@ -317,7 +329,8 @@ AI generating "brutal" content is a brand/store gun, especially Tier 4. Controls
 - Custom escalation intervals
 - "Roast of the Week"
 - Detailed analytics dashboard
-- Wearables / widgets
+- Wearables
+- **Home-screen widgets (v1.1, high retention value).** Glanceable today's-tasks + streak widget (iOS WidgetKit / Android App Widget). Strong habit-tracker lever — a streak you see every time you unlock your phone drives loss-aversion with zero app-open friction; can also surface the day's roast line. Native work (Expo config plugin, not pure JS), so out of the v1.0 core, but prioritized early in v1.1 — not buried with wearables. Reads the same scheduled-vs-acted status source as the agenda/stats screens.
 
 ---
 

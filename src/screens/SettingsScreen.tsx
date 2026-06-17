@@ -27,6 +27,20 @@ export function SettingsScreen() {
           </ThemedView>
         </Pressable>
 
+        <Pressable onPress={() => router.push('/collections')}>
+          <ThemedView type="backgroundElement" style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="smallBold">Collections</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Group goals under a bigger ambition
+              </ThemedText>
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              ›
+            </ThemedText>
+          </ThemedView>
+        </Pressable>
+
         <ThemedText type="small" themeColor="textSecondary">
           Global defaults (rudeness, quiet hours, sound) land in Phase 8.
         </ThemedText>

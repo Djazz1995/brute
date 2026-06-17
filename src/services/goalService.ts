@@ -27,6 +27,7 @@ type GoalRow = {
   rudeness_level: RudenessLevel;
   escalation_speed: EscalationSpeed;
   buddy_id: string | null;
+  collection_id: string | null;
   paused: boolean;
   created_at: string;
 };
@@ -43,6 +44,7 @@ function mapGoal(row: GoalRow): Goal {
     rudenessLevel: row.rudeness_level,
     escalationSpeed: row.escalation_speed,
     buddyId: row.buddy_id ?? undefined,
+    collectionId: row.collection_id ?? undefined,
     paused: row.paused,
     createdAt: row.created_at,
   };
@@ -58,6 +60,7 @@ export type GoalInput = {
   rudenessLevel: RudenessLevel;
   escalationSpeed: EscalationSpeed;
   buddyId?: string;
+  collectionId?: string;
 };
 
 function toRow(input: GoalInput) {
@@ -70,6 +73,7 @@ function toRow(input: GoalInput) {
     rudeness_level: input.rudenessLevel,
     escalation_speed: input.escalationSpeed,
     buddy_id: input.buddyId ?? null,
+    collection_id: input.collectionId ?? null,
   };
 }
 
