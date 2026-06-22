@@ -100,7 +100,7 @@ export function GoalDetailScreen({ goalId }: Props) {
         : undefined;
       setVerdict(line ?? 'Logged. The couch loses this round.');
       setAmountDraft('');
-      await refetchStats();
+      await Promise.all([refetchStats(), refetchStatus()]);
     } catch (e) {
       Alert.alert('Could not mark done', (e as Error).message);
     }
@@ -133,13 +133,6 @@ export function GoalDetailScreen({ goalId }: Props) {
     ]);
   }
 
-  async function onTogglePause() {
-    if (!goal) return;
-    const updated = await goalService.setPaused(goalId, !goal.paused);
-    await notificationService.scheduleForGoal(updated); // cancels when paused
-    refetchGoal();
-  }
-
   if (loading && !goal) {
     return (
       <ThemedView style={styles.center}>
@@ -158,6 +151,11 @@ export function GoalDetailScreen({ goalId }: Props) {
   const next = nextReminder(goal.schedule.slots);
   const scheduledToday = isScheduledToday(goal.schedule.slots);
   const todayStatus = statuses[goal.id];
+  const quantified = typeof goal.targetValue === 'number';
+  // Binary goals complete once per day; block re-tapping. Quantified goals may
+  // keep logging to accumulate toward the target.
+  const completedToday = todayStatus === 'done';
+  const doneLocked = completedToday && !quantified;
   const todayLabel =
     todayStatus === 'done'
       ? { text: 'Done today', color: '#30A46C' }
@@ -251,7 +249,7 @@ export function GoalDetailScreen({ goalId }: Props) {
           </ThemedText>
         ) : null}
 
-        {typeof goal.targetValue === 'number' ? (
+        {quantified ? (
           <View style={styles.amountRow}>
             <TextInput
               value={amountDraft}
@@ -267,7 +265,11 @@ export function GoalDetailScreen({ goalId }: Props) {
           </View>
         ) : null}
 
-        <Button title="Done ✓" onPress={onDone} loading={completing} style={styles.doneHero} />
+        {doneLocked ? (
+          <Button title="Done today ✓" disabled style={styles.doneHero} />
+        ) : (
+          <Button title="Done ✓" onPress={onDone} loading={completing} style={styles.doneHero} />
+        )}
         {scheduledToday && !goal.paused ? (
           <Button
             title="I can’t today"
@@ -275,12 +277,22 @@ export function GoalDetailScreen({ goalId }: Props) {
             onPress={() => router.push(`/goal/${goalId}/skip`)}
           />
         ) : null}
-        <Button
-          title={goal.paused ? 'Resume' : 'Pause'}
-          variant="secondary"
-          onPress={onTogglePause}
-        />
-
+        {completedToday || verdict ? (
+          <Button
+            title="Share"
+            variant="secondary"
+            onPress={() =>
+              router.push({
+                pathname: '/share/[cardId]',
+                params: {
+                  cardId: 'done',
+                  text: verdict ?? `Another one done. ${goal.name} ✅`,
+                  goalName: goal.name,
+                },
+              })
+            }
+          />
+        ) : null}
         <Button
           title={goal.archived ? 'Unarchive' : 'Archive'}
           variant="secondary"

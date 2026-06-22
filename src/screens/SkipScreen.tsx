@@ -46,16 +46,16 @@ export function SkipScreen({ goalId }: Props) {
   function pickReason(r: string) {
     setReason(r);
     setStep('confirm');
+    // Last-chance roast shown BEFORE committing — a motivator to back out (§4.5).
+    getSkip(goal?.rudenessLevel ?? 3, r)
+      .then(setRoast)
+      .catch(() => setRoast('Sure this is the move? The streak won’t hold itself.'));
   }
 
   async function confirmSkip() {
     if (!reason) return;
     try {
       await skip(goalId, reason);
-      const line = await getSkip(goal?.rudenessLevel ?? 3, reason).catch(
-        () => 'Skip logged. Counts against your streak.'
-      );
-      setRoast(line);
       setStep('done');
     } catch (e) {
       setError((e as Error).message);
@@ -85,9 +85,13 @@ export function SkipScreen({ goalId }: Props) {
         ) : step === 'confirm' ? (
           <>
             <ThemedText type="subtitle">You sure?</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              Skipping “{reason}”. This breaks your streak.
-            </ThemedText>
+            {roast ? (
+              <ThemedText type="default">{roast}</ThemedText>
+            ) : (
+              <ThemedText type="small" themeColor="textSecondary">
+                Skipping “{reason}”. This breaks your streak.
+              </ThemedText>
+            )}
             {error ? (
               <ThemedText type="small" style={{ color: '#E5484D' }}>
                 {error}
@@ -105,7 +109,19 @@ export function SkipScreen({ goalId }: Props) {
         ) : (
           <>
             <ThemedText type="subtitle">Skipped.</ThemedText>
-            <ThemedText type="default">{roast}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Logged. Counts against your streak. Get it tomorrow.
+            </ThemedText>
+            <Button
+              title="Share this"
+              variant="secondary"
+              onPress={() =>
+                router.push({
+                  pathname: '/share/[cardId]',
+                  params: { cardId: 'skip', text: roast, goalName: goal?.name ?? '' },
+                })
+              }
+            />
             <Button title="Close" onPress={() => router.back()} />
           </>
         )}

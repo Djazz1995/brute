@@ -54,18 +54,6 @@ export function HomeScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <ThemedText type="subtitle">Your Goals</ThemedText>
-          <View style={styles.headerLinks}>
-            <Pressable onPress={() => router.push('/agenda')} hitSlop={8}>
-              <ThemedText type="link" themeColor="textSecondary">
-                Agenda
-              </ThemedText>
-            </Pressable>
-            <Pressable onPress={() => router.push('/stats')} hitSlop={8}>
-              <ThemedText type="link" themeColor="textSecondary">
-                Stats
-              </ThemedText>
-            </Pressable>
-          </View>
         </View>
 
         {loading && goals.length === 0 ? (
@@ -158,11 +146,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, paddingHorizontal: Spacing.three },
   header: {
     paddingVertical: Spacing.three,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  headerLinks: { flexDirection: 'row', gap: Spacing.three },
   center: { textAlign: 'center', marginTop: Spacing.five },
   list: { gap: Spacing.two, paddingBottom: Spacing.three },
   section: { marginTop: Spacing.three, marginBottom: Spacing.one, textTransform: 'uppercase' },

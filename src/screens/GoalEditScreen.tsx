@@ -6,6 +6,7 @@ import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useBilling } from '@/hooks/use-billing';
 import { useGoal } from '@/hooks/use-goal';
 import { useTheme } from '@/hooks/use-theme';
 import type { EscalationSpeed, GoalCategory, RudenessLevel, Schedule } from '@/models';
@@ -35,6 +36,7 @@ export function GoalEditScreen({ goalId }: Props) {
   const theme = useTheme();
   const inputStyle = useInputStyle();
   const { data: existing } = useGoal(goalId);
+  const { canAddGoal, canUseRudeness, canUseBuddy } = useBilling();
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState<GoalCategory>('gym');
@@ -101,6 +103,21 @@ export function GoalEditScreen({ goalId }: Props) {
       }
       parsedTarget = n;
     }
+    // Paywall gates (§12). All resolve allowed when monetization is off.
+    const toPaywall = (reason: string) => {
+      router.push({ pathname: '/paywall', params: { reason } });
+    };
+    if (!goalId) {
+      const g = await canAddGoal();
+      if (!g.allowed) return toPaywall(g.reason);
+    }
+    const rg = await canUseRudeness(rudeness);
+    if (!rg.allowed) return toPaywall(rg.reason);
+    if (buddyId) {
+      const bg = await canUseBuddy();
+      if (!bg.allowed) return toPaywall(bg.reason);
+    }
+
     setSaving(true);
     setError(undefined);
     const input = {

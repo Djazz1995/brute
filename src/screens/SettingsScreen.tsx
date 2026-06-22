@@ -41,6 +41,20 @@ export function SettingsScreen() {
           </ThemedView>
         </Pressable>
 
+        <Pressable onPress={() => router.push('/archived')}>
+          <ThemedView type="backgroundElement" style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <ThemedText type="smallBold">Archived goals</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                View or restore goals you’ve archived
+              </ThemedText>
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              ›
+            </ThemedText>
+          </ThemedView>
+        </Pressable>
+
         <ThemedText type="small" themeColor="textSecondary">
           Global defaults (rudeness, quiet hours, sound) land in Phase 8.
         </ThemedText>

@@ -44,6 +44,7 @@ export default function RootLayout() {
             />
             <Stack.Screen name="buddy" options={{ title: 'Accountability Buddy' }} />
             <Stack.Screen name="collections" options={{ title: 'Collections' }} />
+            <Stack.Screen name="archived" options={{ title: 'Archived Goals' }} />
             <Stack.Screen
               name="share/[cardId]"
               options={{ presentation: 'modal', title: 'Share' }}

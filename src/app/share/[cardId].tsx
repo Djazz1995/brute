@@ -2,7 +2,11 @@ import { useLocalSearchParams } from 'expo-router';
 
 import { ShareCardScreen } from '@/screens/ShareCardScreen';
 
+/**
+ * Share route. The `cardId` segment is a throwaway (cards aren't persisted in
+ * v1); the roast `text` + `goalName` ride in as query params.
+ */
 export default function ShareCardRoute() {
-  const { cardId } = useLocalSearchParams<{ cardId: string }>();
-  return <ShareCardScreen cardId={cardId} />;
+  const { text, goalName } = useLocalSearchParams<{ text: string; goalName?: string }>();
+  return <ShareCardScreen text={text ?? ''} goalName={goalName} />;
 }

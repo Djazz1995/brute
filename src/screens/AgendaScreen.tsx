@@ -66,7 +66,7 @@ export function AgendaScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ThemedText type="subtitle" style={styles.title}>
-          Agenda
+          Agenda for this week
         </ThemedText>
 
         <View style={styles.strip}>

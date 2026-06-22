@@ -130,12 +130,14 @@ The tracker fundamentals standard habit apps have, and that give the roast bette
 - [x] Migration `0008_roast_pool_variants.sql` — `kind`/`bucket` cols, nullable wave/tactic/category, constraints + indexes.
 - **Done when:** notifications pull real cached roast lines, filtered. — ✅ `0008` + `0009` applied to cloud; `npm run db:smoke6` passes (247 lines, all 4 kinds, all pass §9.3, wave line interpolates). tsc/lint/web-export green. UI sim run still pending.
 
-## Phase 7 — Share + monetization
+## Phase 7 — Share + monetization ✅ DONE (data path verified; UI sim run pending)
 
-- [ ] `ShareService` — watermarked card build + export (IG/TikTok/X/WhatsApp, §4.8).
-- [ ] Share card screen.
-- [ ] `BillingService` + paywall screen — free vs paid gating (§12): 5 goals / Unhinged / buddy.
-- **Done when:** export a card; gating blocks paid features on free tier.
+- [x] `ShareService` — `buildCard` (in-memory RoastCard) + `exportImage` (expo-sharing; web/text fallback). Deps added: `react-native-view-shot`, `expo-sharing`.
+- [x] Share card screen — `ShareCardScreen` renders a watermarked card, captured via `react-native-view-shot` → system share sheet (IG/TikTok/X/WhatsApp). Reached from skip-done + completion-verdict via `/share/[cardId]` (text/goalName as params; cards not persisted in v1).
+- [x] `UserService` (profile/defaults/tier) + `BillingService` (`canAddGoal`/`canUseRudeness`/`canUseBuddy`/`purchase` stub/`restoreFree`) + `useBilling` hook.
+- [x] **Monetization toggle (launch = OFF)** — `src/lib/config.ts` `MONETIZATION_ENABLED` (env `EXPO_PUBLIC_MONETIZATION_ENABLED`, default false). When off, every gate resolves allowed and the paywall never shows. `FREE_TIER` limits (1 goal / max rudeness 3 / no buddy) apply only when on.
+- [x] Paywall screen + gates wired into goal create/edit (`canAddGoal` on create, `canUseRudeness`, `canUseBuddy` → push `/paywall` with reason). Stub purchase flips `profiles.tier`.
+- **Done when:** export a card; gating blocks paid features on free tier. — ✅ tsc/lint/web-export green; `npm run db:smoke7` passes (tier round-trip under RLS). Real IAP + UI sim run pending. Flip on later: set `EXPO_PUBLIC_MONETIZATION_ENABLED=true`.
 
 ## Phase 8 — Onboarding + settings + compliance
 

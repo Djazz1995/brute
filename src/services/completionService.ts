@@ -162,6 +162,24 @@ export const completionService = {
   ): Promise<Completion> {
     const userId = await getUserId();
     if (!userId) throw new Error('Not signed in.');
+
+    // Idempotency: a binary goal (no amount) counts once per day — re-tapping
+    // Done returns the existing completion instead of inserting a duplicate.
+    // Quantified goals (amount passed) may log multiple times to accumulate.
+    if (amount == null) {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const { data: existing, error: exErr } = await supabase
+        .from('completions')
+        .select('*')
+        .eq('goal_id', goalId)
+        .gte('ts', todayStart)
+        .order('ts', { ascending: false })
+        .limit(1);
+      if (exErr) throw exErr;
+      if (existing && existing.length > 0) return mapCompletion(existing[0] as CompletionRow);
+    }
+
     const { data, error } = await supabase
       .from('completions')
       .insert({ goal_id: goalId, user_id: userId, source, witnessed, amount: amount ?? null })

@@ -21,6 +21,7 @@
     "expo-notifications": "~0.32.17",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
+    "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
@@ -37,6 +38,7 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "^15.15.5",
     "react-native-url-polyfill": "^3.0.0",
+    "react-native-view-shot": "4.0.3",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "^0.5.2",
     "react-stately": "^3.48.0",
@@ -68,6 +70,7 @@
     "db:smoke4_5": "node --env-file=.env scripts/smoke-phase4_5.mjs",
     "db:smoke4_6": "node --env-file=.env scripts/smoke-phase4_6.mjs",
     "db:smoke6": "node --env-file=.env scripts/smoke-phase6.mjs",
+    "db:smoke7": "node --env-file=.env scripts/smoke-phase7.mjs",
     "roast:generate": "node scripts/generate-roasts.mjs"
   },
   "private": true
