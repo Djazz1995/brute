@@ -11,6 +11,7 @@ import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import { useNotificationRouting } from '@/hooks/use-notification-routing';
 import { useSession } from '@/hooks/use-session';
 import { useUser } from '@/hooks/use-user';
+import { notificationService } from '@/services/notificationService';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -48,6 +49,11 @@ function RootNav() {
   useEffect(() => {
     if (user && !user.onboarded) router.replace('/onboarding');
   }, [user, router]);
+
+  // Persist this device's push token so the server cron can reach it (§8.2).
+  useEffect(() => {
+    if (user?.onboarded) notificationService.syncPushToken();
+  }, [user?.onboarded]);
 
   return (
     <Stack>

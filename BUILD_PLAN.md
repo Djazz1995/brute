@@ -99,7 +99,7 @@ The tracker fundamentals standard habit apps have, and that give the roast bette
 - [x] **Goal form refactor** — extracted into descriptor-driven field-blocks (`src/screens/goal-form/{config,fields,blocks}.tsx`); adding a goal type = a `GOAL_TYPES` entry (+ a block component only for a genuinely new field). Gym + Chores omit the measure block (no stable per-session number).
 - **Done when:** a weekly-target goal tracks correctly; a quantified goal logs a partial amount; a streak survives a rest day; an archived goal leaves history intact. — ✅ code + tsc/lint green; `npm run db:smoke4_6` passes (quantified amount + weekly-target + rest_day + archive filtering, RLS holds). Streak-math correctness (week mode, rest-day bridge) is pure-function logic in `completionService` — UI sim run still pending.
 
-## Phase 5 — Notifications + escalation — local slice DONE; server cron scaffolded (deploy pending)
+## Phase 5 — Notifications + escalation — local + server logic DONE (cron deploy + device verify pending)
 
 **Local (on-device) — built, tsc/lint/web-export green:**
 
@@ -111,11 +111,14 @@ The tracker fundamentals standard habit apps have, and that give the roast bette
 - [x] **Agenda / calendar screen** — week strip → pick a day → goals due that day (fixed slots on the weekday, weekly goals any day) + today's status. Off Home header.
 - [x] **Stats screen + week overview** — `statsService`; 7-day done/due grid + per-goal current streak (day/week-aware). Off Home header.
 
-**Server (remote push) — scaffolded, NOT deployed/verified (needs Supabase Edge deploy + push creds + dev build):**
+**Server (remote push) — logic implemented; deploy + device verify pending:**
 
-- [~] `supabase/functions/escalation-cron/index.ts` — Deno scaffold: conditional escalation (Wave 2+ only if ignored), **buddy push on complete/skip**, **daily digest** at day-start. Real Expo-Push send + query structure; escalation-state (`notification_log`) + per-section logic are TODO. Replaces raw `fcm.ts` (Expo Push abstracts FCM).
-- [x] Migration `0007_add_push_token.sql` (profiles.push_token for cron targeting). **Pending apply.**
-- **Done when (local):** ✅ goal schedules local reminders; tap deep-links in; agenda lists the day; stats shows week grid + streak. **Server escalation/digest/buddy-push:** deferred to a deploy pass (cron + Expo Push creds + dev build for real device tokens). UI sim run still pending.
+- [x] `supabase/functions/escalation-cron/index.ts` — real logic: **conditional escalation** (highest due Wave 2+ only if the occurrence was ignored, spaced by `OFFSETS[speed]`, deduped via `notification_log`), pulls a wave line from the pool + interpolates `{name}/{cue}`, pushes to the owner's `push_token`, respects quiet hours. **Daily digest** (one/user/day at/after `DIGEST_HOUR_UTC`, counts due goals incl. weekly-under-target). Sends via Expo Push (batched ≤100).
+- [x] Migration `0012_notification_log.sql` — escalation-state log (partial unique: one row per goal/day/wave, one digest per user/day), owner-select RLS, service-role writes.
+- [x] Migration `0007_add_push_token.sql` — applied (smoke5 writes it).
+- [x] Client token sync — `notificationService.syncPushToken()` persists the Expo token to `profiles.push_token`; called from `_layout` `RootNav` on app start (post-onboarding).
+- [~] **Buddy push (§4.6) — NOT built:** `buddies.contact` is free text with no link to an app user/token, so there's nothing to target. Needs a buddy↔profile invite-linking flow → deferred to v1.1.
+- **Done when (local):** ✅ goal schedules local reminders; tap deep-links in; agenda lists the day; stats shows week grid + streak. **Server:** logic done + `npm run db:smoke5` passes (push_token + notification_log + Wave-2 pool). **Remaining to go live (infra, not code):** (1) deploy `supabase functions deploy escalation-cron`; (2) schedule it every ~5 min (pg_cron / dashboard); (3) Expo Push creds (FCM/APNs) + an EAS **dev build** so devices yield real push tokens; (4) verify on device. Timezone caveat: cron treats `HH:mm` as UTC (no per-user tz column yet).
 
 ## Phase 6 — Roast content pipeline (§8.4) ✅ DONE (data path verified; UI sim run pending)
 

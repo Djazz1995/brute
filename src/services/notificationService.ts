@@ -8,14 +8,17 @@
 
 import { Platform } from 'react-native';
 
+import { getUserId } from '@/lib/auth';
 import {
   cancel,
   ensurePermissions,
   getAllScheduled,
+  registerPushToken,
   scheduleWeekly,
   setupAndroidChannel,
   type NotifData,
 } from '@/lib/notifications';
+import { supabase } from '@/lib/supabase';
 import type { Goal } from '@/models';
 import { roastService } from '@/services/roastService';
 
@@ -41,6 +44,20 @@ export const notificationService = {
     if (!SUPPORTED) return false;
     await setupAndroidChannel();
     return ensurePermissions();
+  },
+
+  /**
+   * Register the device's Expo push token and persist it to the user's profile
+   * so the server cron (escalation/digest, §8.2) can target it. No-op on web,
+   * in Expo Go, or without an EAS projectId / permission.
+   */
+  async syncPushToken(): Promise<void> {
+    if (!SUPPORTED) return;
+    const token = await registerPushToken();
+    if (!token) return;
+    const userId = await getUserId();
+    if (!userId) return;
+    await supabase.from('profiles').update({ push_token: token }).eq('id', userId);
   },
 
   /** (Re)schedule all of a goal's Wave-1 reminders. Cancels its old ones first. */
