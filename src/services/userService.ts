@@ -13,6 +13,7 @@ type ProfileRow = {
   sound: 'standard' | 'whistle' | 'foghorn' | 'silent';
   always_watermark: boolean;
   tier: UserTier;
+  onboarded: boolean;
   created_at: string;
 };
 
@@ -20,6 +21,7 @@ function mapUser(row: ProfileRow): User {
   return {
     id: row.id,
     tier: row.tier,
+    onboarded: row.onboarded ?? false,
     createdAt: row.created_at,
     defaults: {
       rudenessLevel: row.rudeness_level,
@@ -64,6 +66,19 @@ export const userService = {
     const { data, error } = await supabase
       .from('profiles')
       .update(row)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    return mapUser(data as ProfileRow);
+  },
+
+  /** Mark onboarding finished (§14.1). */
+  async completeOnboarding(): Promise<User> {
+    const id = await requireUserId();
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ onboarded: true })
       .eq('id', id)
       .select('*')
       .single();

@@ -139,14 +139,15 @@ The tracker fundamentals standard habit apps have, and that give the roast bette
 - [x] Paywall screen + gates wired into goal create/edit (`canAddGoal` on create, `canUseRudeness`, `canUseBuddy` → push `/paywall` with reason). Stub purchase flips `profiles.tier`.
 - **Done when:** export a card; gating blocks paid features on free tier. — ✅ tsc/lint/web-export green; `npm run db:smoke7` passes (tier round-trip under RLS). Real IAP + UI sim run pending. Flip on later: set `EXPO_PUBLIC_MONETIZATION_ENABLED=true`.
 
-## Phase 8 — Onboarding + settings + compliance
+## Phase 8 — Onboarding + settings + compliance ✅ DONE (data path verified; UI sim run pending)
 
-- [ ] Onboarding flow (welcome → harsh-humor consent §9.1 → defaults → push permission → first goal).
-- [ ] **Habit templates** — preset starter goals (gym / water / read / study) on the first-goal step. One tap pre-fills name/category/schedule/quantified target → less setup friction → higher activation. Reduces drop-off at the weakest funnel step.
-- [ ] Global settings screen (§7.2).
-- [ ] First-launch harsh-humor notice; rudeness hard-limits enforced in system prompt + filter.
-- [ ] GDPR data export/delete (§10).
-- **Done when:** cold-start onboarding works end-to-end.
+- [x] Onboarding flow — `OnboardingScreen` 5 steps: welcome (sample roast) → harsh-humor consent (§9.1) → default rudeness/escalation (`updateDefaults`) → push permission (`notificationService.init`) → first goal. Cold-start gate in `_layout` `RootNav`: not-onboarded user → `/onboarding`; finishing flips `profiles.onboarded` + lands on Home.
+- [x] **Habit templates** — Gym / Drink water / Read / Tidy up on the first-goal step; one tap builds a real goal from `GOAL_TYPES` defaults (schedule + quantified target) and schedules its reminders. "I'll set one up later" skips.
+- [x] Global settings screen (§7.2) — default rudeness/escalation/sound/quiet-hours/watermark, each persisted via `userService.updateDefaults`; plus Manage (buddies/collections/archived) + Privacy section.
+- [x] First-launch harsh-humor notice (consent step) + golden-rule/hard-limits copy. Generation-side limits already enforced by `src/lib/safety.ts` (§9.3) from Phase 6.
+- [x] GDPR data export/delete (§10) — `dataService.exportData()` (bundles all user rows → share sheet) + `deleteAccount()` (erase content + profile, sign out, fresh anon user). Migration `0011` adds the profiles DELETE policy. Wired into Settings → Privacy.
+- [x] `User.onboarded` model + `userService.completeOnboarding()` + `useUser` hook. Migration `0010` (profiles.onboarded).
+- **Done when:** cold-start onboarding works end-to-end. — ✅ `0010` + `0011` applied; `npm run db:smoke8` passes (onboarded flag + defaults + GDPR export/delete, profile DELETE under RLS). tsc/lint/web-export green. UI sim run still pending.
 
 ## Phase 8.5 — Home-screen widgets (v1.1, high retention value)
 

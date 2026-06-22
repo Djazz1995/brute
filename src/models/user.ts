@@ -22,5 +22,7 @@ export type User = {
   id: string;
   defaults: UserDefaults;
   tier: UserTier;
+  /** Has the user finished the onboarding flow (§14.1)? Gates cold start. */
+  onboarded: boolean;
   createdAt: string;
 };
