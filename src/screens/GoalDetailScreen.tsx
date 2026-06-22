@@ -17,9 +17,11 @@ import { Spacing } from '@/constants/theme';
 import { useComplete } from '@/hooks/use-complete';
 import { useGoal } from '@/hooks/use-goal';
 import { useStreak } from '@/hooks/use-streak';
+import { useTodayStatuses } from '@/hooks/use-today-status';
 import { useTheme } from '@/hooks/use-theme';
 import type { ScheduleSlot } from '@/models';
 import { goalService } from '@/services/goalService';
+import { notificationService } from '@/services/notificationService';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -61,6 +63,7 @@ export function GoalDetailScreen({ goalId }: Props) {
   const theme = useTheme();
   const { data: goal, loading, error, refetch: refetchGoal } = useGoal(goalId);
   const { data: stats, refetch: refetchStats } = useStreak(goalId);
+  const { data: statuses, refetch: refetchStatus } = useTodayStatuses(goal ? [goal] : []);
   const { complete, completing } = useComplete();
   const [justDone, setJustDone] = useState(false);
   const [amountDraft, setAmountDraft] = useState('');
@@ -70,7 +73,8 @@ export function GoalDetailScreen({ goalId }: Props) {
     useCallback(() => {
       refetchGoal();
       refetchStats();
-    }, [refetchGoal, refetchStats])
+      refetchStatus();
+    }, [refetchGoal, refetchStats, refetchStatus])
   );
 
   async function onDone() {
@@ -96,7 +100,8 @@ export function GoalDetailScreen({ goalId }: Props) {
 
   async function onToggleArchive() {
     if (!goal) return;
-    await goalService.setArchived(goalId, !goal.archived);
+    const updated = await goalService.setArchived(goalId, !goal.archived);
+    await notificationService.scheduleForGoal(updated); // cancels when archived
     if (!goal.archived) router.back();
     else refetchGoal();
   }
@@ -110,6 +115,7 @@ export function GoalDetailScreen({ goalId }: Props) {
         onPress: async () => {
           try {
             await goalService.remove(goalId);
+            await notificationService.cancelForGoal(goalId);
             router.back();
           } catch (e) {
             Alert.alert('Could not delete', (e as Error).message);
@@ -121,7 +127,8 @@ export function GoalDetailScreen({ goalId }: Props) {
 
   async function onTogglePause() {
     if (!goal) return;
-    await goalService.setPaused(goalId, !goal.paused);
+    const updated = await goalService.setPaused(goalId, !goal.paused);
+    await notificationService.scheduleForGoal(updated); // cancels when paused
     refetchGoal();
   }
 
@@ -142,6 +149,15 @@ export function GoalDetailScreen({ goalId }: Props) {
 
   const next = nextReminder(goal.schedule.slots);
   const scheduledToday = isScheduledToday(goal.schedule.slots);
+  const todayStatus = statuses[goal.id];
+  const todayLabel =
+    todayStatus === 'done'
+      ? { text: 'Done today', color: '#30A46C' }
+      : todayStatus === 'skipped'
+        ? { text: 'Skipped today', color: '#E5484D' }
+        : todayStatus === 'pending'
+          ? { text: 'Due today', color: '#3c87f7' }
+          : null;
 
   return (
     <ThemedView style={styles.container}>
@@ -162,6 +178,11 @@ export function GoalDetailScreen({ goalId }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <View>
           <ThemedText type="title">{goal.name}</ThemedText>
+          {todayLabel ? (
+            <ThemedText type="smallBold" style={{ color: todayLabel.color }}>
+              {todayLabel.text}
+            </ThemedText>
+          ) : null}
           <ThemedText type="small" themeColor="textSecondary">
             {goal.category} · rudeness {goal.rudenessLevel} · {goal.escalationSpeed}
             {goal.paused ? ' · paused' : ''}

@@ -18,6 +18,16 @@ export default function AppTabs() {
         <Icon src={require('@/assets/images/tabIcons/home.png')} />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="agenda">
+        <Label>Agenda</Label>
+        <Icon sf="calendar" />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="stats">
+        <Label>Stats</Label>
+        <Icon sf="chart.bar.fill" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="settings">
         <Label>Settings</Label>
         <Icon sf="gearshape.fill" />

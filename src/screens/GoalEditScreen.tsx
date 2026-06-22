@@ -10,6 +10,7 @@ import { useGoal } from '@/hooks/use-goal';
 import { useTheme } from '@/hooks/use-theme';
 import type { EscalationSpeed, GoalCategory, RudenessLevel, Schedule } from '@/models';
 import { goalService } from '@/services/goalService';
+import { notificationService } from '@/services/notificationService';
 
 import {
   BlockersBlock,
@@ -116,8 +117,10 @@ export function GoalEditScreen({ goalId }: Props) {
       unit: parsedTarget != null && measure.unit.trim() ? measure.unit.trim() : undefined,
     };
     try {
-      if (goalId) await goalService.update(goalId, input);
-      else await goalService.create(input);
+      const saved = goalId
+        ? await goalService.update(goalId, input)
+        : await goalService.create(input);
+      await notificationService.scheduleForGoal(saved);
       router.back();
     } catch (e) {
       setError((e as Error).message);

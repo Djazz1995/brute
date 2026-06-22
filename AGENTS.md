@@ -4,6 +4,15 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before 
 
 ---
 
+## Docs
+
+- PRD → this file (RoastMode product requirements + §15 Frontend Architecture)
+- Build plan → `BUILD_PLAN.md` (phased what/order: tasks, "Done when", build status) — build from this
+- Build workflow → `docs/build-workflow.md` (the per-screen/feature procedure to follow) + `docs/od-design-workflow.md` (Open Design wiring + recipe)
+- Architecture → this file, Section 15.
+
+---
+
 # Product Requirements Document
 
 ## RoastMode — AI-Powered Brutal Motivation App

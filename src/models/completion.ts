@@ -25,6 +25,15 @@ export type Skip = {
   reason: string;
 };
 
+/**
+ * A goal's state for the current day (§4.7 home/agenda):
+ * - `done`    — completed today.
+ * - `skipped` — explicitly skipped today.
+ * - `pending` — expected today (scheduled, or a weekly-target not yet met) and not acted on.
+ * - `off`     — not expected today (no slot today, or weekly target already met).
+ */
+export type TodayStatus = 'done' | 'skipped' | 'pending' | 'off';
+
 /** Derived per-goal stats (computed from completions/skips, §4.7). */
 export type StreakStats = {
   current: number;

@@ -99,18 +99,23 @@ The tracker fundamentals standard habit apps have, and that give the roast bette
 - [x] **Goal form refactor** — extracted into descriptor-driven field-blocks (`src/screens/goal-form/{config,fields,blocks}.tsx`); adding a goal type = a `GOAL_TYPES` entry (+ a block component only for a genuinely new field). Gym + Chores omit the measure block (no stable per-session number).
 - **Done when:** a weekly-target goal tracks correctly; a quantified goal logs a partial amount; a streak survives a rest day; an archived goal leaves history intact. — ✅ code + tsc/lint green; `npm run db:smoke4_6` passes (quantified amount + weekly-target + rest_day + archive filtering, RLS holds). Streak-math correctness (week mode, rest-day bridge) is pure-function logic in `completionService` — UI sim run still pending.
 
-## Phase 5 — Notifications + escalation (own subsystem)
+## Phase 5 — Notifications + escalation — local slice DONE; server cron scaffolded (deploy pending)
 
-- [ ] `src/lib/notifications.ts` (expo-notifications) — schedule + deep-link tap.
-- [ ] `EscalationService` — tactic ladder, wave→tactic map (§3.3).
-- [ ] `NotificationService` — schedule per goal, handle tap → route to complete/skip.
-- [ ] `fcm.ts` + Supabase cron Edge Function to trigger at goal times (§8.2).
-- [ ] **Buddy push on complete/skip** (carried from Phase 4) — FCM to the buddy's device when a witnessed goal is completed or skipped (§4.6).
-- [ ] Today's per-goal **status (done / pending / skipped)** on home + goal detail — needs scheduled-vs-acted tracking (same source that fills `StreakStats.ignoredCount`, stubbed in Phase 3).
-- [ ] **Agenda / calendar screen** — pick a day → see every goal/task scheduled for that day (with its status: done / pending / skipped). Day-by-day view of what's due, driven by `schedule.slots` + the same status source above. New screen, reached from Home. Read-only browse in v1; tap a goal → goal detail.
-- [ ] **Daily digest roast** — one push at day-start (configurable time, respects quiet hours §7.2) summarizing today's scheduled goals as a single roast ("3 tasks today. History says you bail on 2."). Schedule + deliver here; roast copy comes from Phase 6. Counts today's slots from `schedule.slots`; suppress if zero goals due.
-- [ ] **Stats screen + week overview** — new screen off Home. Per-day done-vs-not-done counts, current/longest streak (reuse `StreakStats`), and a 7-day grid (this week: each day done/missed). Driven by the same scheduled-vs-acted status source above. Read-only.
-- **Done when:** ignored goal escalates through waves; tap deep-links into app; agenda day-view lists that day's goals; daily digest fires at day-start; stats screen shows week grid + streak.
+**Local (on-device) — built, tsc/lint/web-export green:**
+
+- [x] `src/lib/notifications.ts` (expo-notifications, SDK 54) — perms, Android channel, weekly local schedule (ISO→expo weekday convert), cancel, tap listener, `registerPushToken`. Web-guarded.
+- [x] `EscalationService` — pure tactic ladder + offsets per speed (slow/normal/unhinged), wave→tactic map (§3.3).
+- [x] `NotificationService` — schedule Wave-1 per goal slot, cancel-by-goal (tagged via notif data), reschedule on create/update/pause/archive, cancel on delete. Wired into goal mutations.
+- [x] Notification **tap → deep link** — `useNotificationRouting` in root layout (warm + cold start).
+- [x] Today's per-goal **status (done/pending/skipped/off)** — `statusService` + `useTodayStatuses`; badges on **home**, **agenda**, **goal detail** (weekly-aware: pending until weekly target met).
+- [x] **Agenda / calendar screen** — week strip → pick a day → goals due that day (fixed slots on the weekday, weekly goals any day) + today's status. Off Home header.
+- [x] **Stats screen + week overview** — `statsService`; 7-day done/due grid + per-goal current streak (day/week-aware). Off Home header.
+
+**Server (remote push) — scaffolded, NOT deployed/verified (needs Supabase Edge deploy + push creds + dev build):**
+
+- [~] `supabase/functions/escalation-cron/index.ts` — Deno scaffold: conditional escalation (Wave 2+ only if ignored), **buddy push on complete/skip**, **daily digest** at day-start. Real Expo-Push send + query structure; escalation-state (`notification_log`) + per-section logic are TODO. Replaces raw `fcm.ts` (Expo Push abstracts FCM).
+- [x] Migration `0007_add_push_token.sql` (profiles.push_token for cron targeting). **Pending apply.**
+- **Done when (local):** ✅ goal schedules local reminders; tap deep-links in; agenda lists the day; stats shows week grid + streak. **Server escalation/digest/buddy-push:** deferred to a deploy pass (cron + Expo Push creds + dev build for real device tokens). UI sim run still pending.
 
 ## Phase 6 — Roast content pipeline (§8.4)
 

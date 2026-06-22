@@ -9,7 +9,8 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useCollections } from '@/hooks/use-collections';
 import { useGoals } from '@/hooks/use-goals';
-import type { Collection, Goal } from '@/models';
+import { useTodayStatuses } from '@/hooks/use-today-status';
+import type { Collection, Goal, TodayStatus } from '@/models';
 
 const UNGROUPED = 'Ungrouped';
 
@@ -34,13 +35,15 @@ export function HomeScreen() {
   const router = useRouter();
   const { data: goals, loading, error, refetch } = useGoals();
   const { data: collections, refetch: refetchCollections } = useCollections();
+  const { data: statuses, refetch: refetchStatuses } = useTodayStatuses(goals);
 
   // Refresh when returning from create/edit/detail.
   useFocusEffect(
     useCallback(() => {
       refetch();
       refetchCollections();
-    }, [refetch, refetchCollections])
+      refetchStatuses();
+    }, [refetch, refetchCollections, refetchStatuses])
   );
 
   const sections = useMemo(() => buildSections(goals, collections), [goals, collections]);
@@ -51,6 +54,18 @@ export function HomeScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <ThemedText type="subtitle">Your Goals</ThemedText>
+          <View style={styles.headerLinks}>
+            <Pressable onPress={() => router.push('/agenda')} hitSlop={8}>
+              <ThemedText type="link" themeColor="textSecondary">
+                Agenda
+              </ThemedText>
+            </Pressable>
+            <Pressable onPress={() => router.push('/stats')} hitSlop={8}>
+              <ThemedText type="link" themeColor="textSecondary">
+                Stats
+              </ThemedText>
+            </Pressable>
+          </View>
         </View>
 
         {loading && goals.length === 0 ? (
@@ -74,7 +89,7 @@ export function HomeScreen() {
                   )
                 : undefined
             }
-            renderItem={({ item }) => <GoalRow goal={item} />}
+            renderItem={({ item }) => <GoalRow goal={item} status={statuses[item.id]} />}
             ListEmptyComponent={
               <ThemedText type="small" style={styles.center}>
                 No goals yet. Add one to get roasted.
@@ -91,7 +106,32 @@ export function HomeScreen() {
   );
 }
 
-function GoalRow({ goal }: { goal: Goal }) {
+const STATUS_META: Record<TodayStatus, { label: string; color: string } | null> = {
+  done: { label: 'Done', color: '#30A46C' },
+  skipped: { label: 'Skipped', color: '#E5484D' },
+  pending: { label: 'Today', color: '#3c87f7' },
+  off: null,
+};
+
+function StatusBadge({ status }: { status?: TodayStatus }) {
+  const meta = status ? STATUS_META[status] : null;
+  if (!meta) return null;
+  return (
+    <View style={[styles.badge, { backgroundColor: meta.color }]}>
+      <ThemedText type="small" style={styles.badgeText}>
+        {meta.label}
+      </ThemedText>
+    </View>
+  );
+}
+
+function cadenceText(goal: Goal): string {
+  if (goal.schedule.weeklyTarget) return `${goal.schedule.weeklyTarget}× per week`;
+  const n = goal.schedule.slots.length;
+  return `${n} ${n === 1 ? 'reminder' : 'reminders'}`;
+}
+
+function GoalRow({ goal, status }: { goal: Goal; status?: TodayStatus }) {
   return (
     <Link href={`/goal/${goal.id}`} asChild>
       <Pressable>
@@ -100,10 +140,10 @@ function GoalRow({ goal }: { goal: Goal }) {
             <ThemedText type="smallBold">{goal.name}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               {goal.category}
-              {goal.paused ? ' · paused' : ''} · {goal.schedule.slots.length}{' '}
-              {goal.schedule.slots.length === 1 ? 'reminder' : 'reminders'}
+              {goal.paused ? ' · paused' : ''} · {cadenceText(goal)}
             </ThemedText>
           </View>
+          <StatusBadge status={status} />
           <ThemedText type="small" themeColor="textSecondary">
             ›
           </ThemedText>
@@ -116,7 +156,13 @@ function GoalRow({ goal }: { goal: Goal }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, paddingHorizontal: Spacing.three },
-  header: { paddingVertical: Spacing.three },
+  header: {
+    paddingVertical: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLinks: { flexDirection: 'row', gap: Spacing.three },
   center: { textAlign: 'center', marginTop: Spacing.five },
   list: { gap: Spacing.two, paddingBottom: Spacing.three },
   section: { marginTop: Spacing.three, marginBottom: Spacing.one, textTransform: 'uppercase' },
@@ -128,4 +174,10 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   footer: { paddingTop: Spacing.three, paddingBottom: BottomTabInset + Spacing.three },
+  badge: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+    borderRadius: Spacing.five,
+  },
+  badgeText: { color: '#ffffff', fontWeight: '600' },
 });
