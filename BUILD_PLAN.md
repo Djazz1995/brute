@@ -23,6 +23,21 @@ are the riskiest subsystem and the real product — don't leave too late, don't 
 
 ---
 
+## ▶ What to do next (live checklist — June 2026)
+
+Core build (Phases 1–8 + Phase 5 server logic) is code-complete and DB-verified via smokes. Ordered next steps:
+
+1. [x] **Commit the work** — Phases 5(server)–8 checkpointed before live testing.
+2. [ ] **Run in iOS simulator** — first real UI pass: onboarding → create goal → Done → skip flow → share card → settings → archive/unarchive. Fix what the sim surfaces; clears the "UI sim run pending" notes. (Notifications won't fire here — needs a dev build.)
+3. [ ] **EAS dev build** — required before notifications work at all (`eas build --profile development`). Gives real push tokens + lets the cron reach the device.
+4. [ ] **Go live on notifications** — `supabase functions deploy escalation-cron`; schedule every ~5 min (pg_cron / dashboard); add Expo Push creds (FCM + APNs); verify on device (ignore a goal → Wave 2/3/4 land; morning digest arrives).
+5. [ ] **AI content pass** — run the Phase 0.1 bake-off (pick funniest non-refusing model); wire `anthropicProvider.generate()`, set `ANTHROPIC_API_KEY` + `ROAST_PROVIDER=anthropic`; `npm run roast:generate` → real-model pool (~50 lines per cat×level×wave) through the §9.3 filter.
+6. [ ] **Phase 9 — hardening + ship** — analytics (open rate, tactic-wave conversion, D7), AI-cost-per-user metric, store-compliance pass (§9, Carrot framing), TestFlight/internal beta.
+
+**Deferred (not now):** buddy push (needs buddy↔profile linking, v1.1), home-screen widgets (Phase 8.5, v1.1), per-user timezone for the cron.
+
+---
+
 ## Phase 0 — Gates (before any app code, per PRD §0)
 
 - [ ] Content-validation gate (§0) — faceless TikTok/IG roast posts, 2–3 niches. **Go/no-go.**

@@ -114,4 +114,14 @@ export async function registerPushToken(): Promise<string | undefined> {
   }
 }
 
-export { useLastNotificationResponse } from 'expo-notifications';
+/**
+ * Web-safe wrapper over expo-notifications' hook: its internal native call
+ * (`getLastNotificationResponse`) is unavailable on web and throws, crashing the
+ * root layout. `Platform.OS` is constant for the session, so the conditional
+ * hook call never changes between renders.
+ */
+export function useLastNotificationResponse(): Notifications.NotificationResponse | null {
+  if (Platform.OS === 'web') return null;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return Notifications.useLastNotificationResponse() ?? null;
+}
