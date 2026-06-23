@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -153,17 +154,16 @@ export function GoalDetailScreen({ goalId }: Props) {
   const today = statuses[goal.id];
   const todayStatus = today?.status;
   const quantified = typeof goal.targetValue === 'number';
-  const weekTarget = goal.schedule.weeklyTarget;
-  const weekDone = today?.weekDone ?? 0;
-  const weekMet = weekTarget != null && weekDone >= weekTarget;
+  const progress = today?.progress; // weekly or specific-dates: {done,total,kind}
+  const progressMet = progress ? progress.done >= progress.total : false;
   // Binary goals complete once per day; block re-tapping. Quantified goals may
   // keep logging to accumulate toward the target.
   const completedToday = todayStatus === 'done';
   const doneLocked = completedToday && !quantified;
-  // Fixed-schedule goal not scheduled today (weekly handled by weekMet below):
-  // not actionable. 'off' from statusService; exclude paused/archived states.
+  // Not actionable today: status 'off' (fixed not scheduled, or a date that's
+  // not today) and the progress target isn't already met. Exclude paused/archived.
   const notDueToday =
-    !weekMet && weekTarget == null && todayStatus === 'off' && !goal.paused && !goal.archived;
+    !progressMet && todayStatus === 'off' && !goal.paused && !goal.archived;
   const todayLabel =
     todayStatus === 'done'
       ? { text: 'Done today', color: '#30A46C' }
@@ -179,12 +179,8 @@ export function GoalDetailScreen({ goalId }: Props) {
         options={{
           title: goal.name,
           headerRight: () => (
-            <Pressable
-              onPress={() => router.push(`/goal/${goalId}/edit`)}
-              hitSlop={12}
-              style={styles.headerBtn}
-            >
-              <ThemedText style={styles.headerBtnText}>Edit</ThemedText>
+            <Pressable onPress={() => router.push(`/goal/${goalId}/edit`)} hitSlop={12}>
+              <Text style={styles.headerBtnText}>Edit</Text>
             </Pressable>
           ),
         }}
@@ -202,15 +198,19 @@ export function GoalDetailScreen({ goalId }: Props) {
             {goal.paused ? ' · paused' : ''}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {weekTarget
-              ? `${weekTarget} ${weekTarget === 1 ? 'day' : 'days'} a week`
-              : goal.schedule.slots.length > 0
-                ? goal.schedule.slots.map(slotText).join(', ')
-                : 'No reminders set'}
+            {goal.schedule.dates?.length
+              ? `${goal.schedule.dates.length} dates${goal.schedule.time ? ` · ${goal.schedule.time}` : ''}`
+              : goal.schedule.weeklyTarget
+                ? `${goal.schedule.weeklyTarget} ${goal.schedule.weeklyTarget === 1 ? 'day' : 'days'} a week`
+                : goal.schedule.slots.length > 0
+                  ? goal.schedule.slots.map(slotText).join(', ')
+                  : 'No reminders set'}
           </ThemedText>
-          {weekTarget ? (
-            <ThemedText type="smallBold" style={{ color: weekMet ? '#30A46C' : '#3c87f7' }}>
-              This week: {weekDone}/{weekTarget} done
+          {progress ? (
+            <ThemedText type="smallBold" style={{ color: progressMet ? '#30A46C' : '#3c87f7' }}>
+              {progress.kind === 'dates'
+                ? `${progress.done}/${progress.total} dates done`
+                : `This week: ${progress.done}/${progress.total} done`}
             </ThemedText>
           ) : null}
           {typeof goal.targetValue === 'number' ? (
@@ -278,8 +278,12 @@ export function GoalDetailScreen({ goalId }: Props) {
           </View>
         ) : null}
 
-        {weekMet ? (
-          <Button title="Done this week ✓" disabled style={styles.doneHero} />
+        {progressMet ? (
+          <Button
+            title={progress?.kind === 'dates' ? 'All dates done ✓' : 'Done this week ✓'}
+            disabled
+            style={styles.doneHero}
+          />
         ) : notDueToday ? (
           <Button title="Not due today" disabled style={styles.doneHero} />
         ) : doneLocked ? (
@@ -355,11 +359,11 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     gap: Spacing.half,
   },
-  headerBtn: { paddingHorizontal: Spacing.two },
   headerBtnText: {
     fontSize: 17,
     fontWeight: '600',
     color: '#3c87f7',
+    textAlign: 'center',
   },
   doneHero: { minHeight: 60 },
   amountRow: { flexDirection: 'row' },

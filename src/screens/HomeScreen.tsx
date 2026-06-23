@@ -101,15 +101,16 @@ const STATUS_META: Record<TodayStatus, { label: string; color: string } | null> 
   off: null,
 };
 
-/** Weekly goals show N/target progress; fixed goals show today's status. */
+/** Weekly/date goals show N/total progress; fixed goals show today's status. */
 function TodayBadge({ today }: { today?: GoalToday }) {
   if (!today) return null;
-  if (today.weekTarget != null) {
-    const met = today.weekDone >= today.weekTarget;
+  if (today.progress) {
+    const { done, total } = today.progress;
+    const met = done >= total;
     return (
       <View style={[styles.badge, { backgroundColor: met ? '#30A46C' : '#3c87f7' }]}>
         <ThemedText type="small" style={styles.badgeText}>
-          {today.weekDone}/{today.weekTarget}
+          {done}/{total}
         </ThemedText>
       </View>
     );
@@ -126,6 +127,10 @@ function TodayBadge({ today }: { today?: GoalToday }) {
 }
 
 function cadenceText(goal: Goal): string {
+  if (goal.schedule.dates?.length) {
+    const n = goal.schedule.dates.length;
+    return `${n} ${n === 1 ? 'date' : 'dates'}`;
+  }
   if (goal.schedule.weeklyTarget) {
     return `${goal.schedule.weeklyTarget} ${goal.schedule.weeklyTarget === 1 ? 'day' : 'days'} a week`;
   }

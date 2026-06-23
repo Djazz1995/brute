@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Modal, Platform, Pressable, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { MonthCalendar } from '@/components/month-calendar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
@@ -124,9 +125,19 @@ export function ScheduleBlock({
   category: GoalCategory;
   defaults: CategoryConfig;
 }) {
-  const mode: 'fixed' | 'weekly' = value.weeklyTarget != null ? 'weekly' : 'fixed';
+  const mode: 'fixed' | 'weekly' | 'dates' = value.dates
+    ? 'dates'
+    : value.weeklyTarget != null
+      ? 'weekly'
+      : 'fixed';
   const slots = value.slots;
   const labelOptions = LABEL_OPTIONS[category];
+  const datesTime = value.time ?? defaults.defaultTime ?? '09:00';
+
+  // Day chips start at today and wrap (today → +6 days), so the picker reads
+  // forward instead of always Mon-first. ISO weekday: 1 = Mon … 7 = Sun.
+  const todayIso = ((new Date().getDay() + 6) % 7) + 1;
+  const dayOrder = Array.from({ length: 7 }, (_, k) => ((todayIso - 1 + k) % 7) + 1);
 
   // Ephemeral builder state (which slot is being composed) — not persisted.
   const [builderDays, setBuilderDays] = useState<number[]>(defaults.defaultDays ?? [1, 3, 5]);
@@ -136,16 +147,26 @@ export function ScheduleBlock({
   const [selectedLabel, setSelectedLabel] = useState<string | undefined>(labelOptions?.[0].label);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [timeDraft, setTimeDraft] = useState<Date>(() => timeToDate(builderTime));
+  // Separate picker for the shared "specific dates" reminder time.
+  const [showDatesTime, setShowDatesTime] = useState(false);
+  const [datesTimeDraft, setDatesTimeDraft] = useState<Date>(() => timeToDate(datesTime));
   const [error, setError] = useState<string>();
 
-  function setMode(next: 'fixed' | 'weekly') {
-    // Weekly goals are day-count only — no clock reminders, so clear slots.
+  function setMode(next: 'fixed' | 'weekly' | 'dates') {
+    // Each mode is exclusive — clear the others' fields.
     if (next === 'weekly') onChange({ slots: [], weeklyTarget: defaults.weeklyTarget ?? 3 });
+    else if (next === 'dates') onChange({ slots: [], dates: [], time: defaults.defaultTime ?? '09:00' });
     else onChange({ slots });
   }
 
   function setWeekly(n: number) {
     onChange({ slots: [], weeklyTarget: n });
+  }
+
+  function toggleDate(date: string) {
+    const cur = value.dates ?? [];
+    const next = cur.includes(date) ? cur.filter((d) => d !== date) : [...cur, date].sort();
+    onChange({ slots: [], dates: next, time: datesTime });
   }
 
   function toggleBuilderDay(d: number) {
@@ -182,7 +203,75 @@ export function ScheduleBlock({
       <View style={s.chips}>
         <Chip text="Specific days & times" active={mode === 'fixed'} onPress={() => setMode('fixed')} />
         <Chip text="X days a week" active={mode === 'weekly'} onPress={() => setMode('weekly')} />
+        <Chip text="Specific dates" active={mode === 'dates'} onPress={() => setMode('dates')} />
       </View>
+
+      {mode === 'dates' ? (
+        <>
+          <ThemedText type="small" themeColor="textSecondary">
+            Pick the exact dates, any time you like. Each date is its own check-off.
+          </ThemedText>
+          <MonthCalendar selected={value.dates ?? []} onToggle={toggleDate} minDate={new Date()} />
+          <View style={s.entryRow}>
+            <ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>
+              {(value.dates ?? []).length} date{(value.dates ?? []).length === 1 ? '' : 's'} · reminder at
+            </ThemedText>
+            <Pressable
+              onPress={() => {
+                setDatesTimeDraft(timeToDate(datesTime));
+                setShowDatesTime(true);
+              }}
+            >
+              <ThemedView type="backgroundElement" style={[s.input, s.timeBox]}>
+                <ThemedText type="default">{datesTime}</ThemedText>
+              </ThemedView>
+            </Pressable>
+          </View>
+          {Platform.OS === 'ios' ? (
+            <Modal visible={showDatesTime} transparent animationType="slide">
+              <Pressable style={s.modalBackdrop} onPress={() => setShowDatesTime(false)}>
+                <Pressable>
+                  <ThemedView style={s.modalSheet}>
+                    <View style={s.modalHeader}>
+                      <Pressable onPress={() => setShowDatesTime(false)}>
+                        <ThemedText type="link" themeColor="textSecondary">
+                          Cancel
+                        </ThemedText>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          onChange({ slots: [], dates: value.dates ?? [], time: dateToTime(datesTimeDraft) });
+                          setShowDatesTime(false);
+                        }}
+                      >
+                        <ThemedText type="linkPrimary">Done</ThemedText>
+                      </Pressable>
+                    </View>
+                    <DateTimePicker
+                      value={datesTimeDraft}
+                      mode="time"
+                      display="spinner"
+                      onChange={(_, date) => date && setDatesTimeDraft(date)}
+                    />
+                  </ThemedView>
+                </Pressable>
+              </Pressable>
+            </Modal>
+          ) : showDatesTime ? (
+            <DateTimePicker
+              value={datesTimeDraft}
+              mode="time"
+              is24Hour
+              display="default"
+              onChange={(event, date) => {
+                setShowDatesTime(false);
+                if (event.type === 'set' && date)
+                  onChange({ slots: [], dates: value.dates ?? [], time: dateToTime(date) });
+              }}
+            />
+          ) : null}
+        </>
+      ) : null}
 
       {mode === 'weekly' ? (
         <>
@@ -211,12 +300,12 @@ export function ScheduleBlock({
           </ThemedText>
 
           <View style={s.chips}>
-            {WEEKDAYS.map((w, i) => (
+            {dayOrder.map((iso) => (
               <Chip
-                key={w}
-                text={w}
-                active={builderDays.includes(i + 1)}
-                onPress={() => toggleBuilderDay(i + 1)}
+                key={iso}
+                text={WEEKDAYS[iso - 1]}
+                active={builderDays.includes(iso)}
+                onPress={() => toggleBuilderDay(iso)}
               />
             ))}
           </View>

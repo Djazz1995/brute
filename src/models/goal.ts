@@ -24,16 +24,20 @@ export type ScheduleSlot = {
 };
 
 /**
- * A goal's cadence. Two modes (§4.1):
- * - **Fixed**: `slots` drive specific (weekday + time) reminders.
- * - **Weekly target**: `weeklyTarget` = "N times per week, any day" when the
- *   goal isn't clock-bound. `slots` may still hold optional nudge times.
- * Both can coexist, but streak math keys off `weeklyTarget` when present.
+ * A goal's cadence. Three mutually exclusive modes (§4.1):
+ * - **Fixed**: `slots` drive specific (weekday + time) recurring reminders.
+ * - **Weekly target**: `weeklyTarget` = "N days a week, any day".
+ * - **Specific dates**: `dates` = explicit one-off calendar dates (`YYYY-MM-DD`)
+ *   with a single shared `time`. Progress is per-date (done/total).
  */
 export type Schedule = {
   slots: ScheduleSlot[];
-  /** "N times per week, any day" (§4.1). Unset = fixed-slot goal. */
+  /** "N days a week, any day" (§4.1). Set = weekly-target goal. */
   weeklyTarget?: number;
+  /** Explicit one-off dates (`YYYY-MM-DD`). Set = specific-dates goal. */
+  dates?: string[];
+  /** Shared local "HH:mm" reminder for `dates` mode. */
+  time?: string;
 };
 
 export type Goal = {

@@ -23,6 +23,12 @@ function sameDay(a: Date, b: Date): boolean {
   );
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+/** Local `YYYY-MM-DD`. */
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /**
  * Pure status rule for one goal given this week's completion timestamps and
  * today's skip timestamps. Exported for testing.
@@ -79,12 +85,54 @@ export const statusService = {
       (skipByGoal.get(r.goal_id) ?? skipByGoal.set(r.goal_id, []).get(r.goal_id)!).push(r.ts);
     }
 
+    // Specific-dates goals need their full completion history (dates can be any
+    // time, not just this week) to compute "N/total dates done".
+    const dateGoalIds = goals.filter((g) => g.schedule.dates?.length).map((g) => g.id);
+    const doneDatesByGoal = new Map<string, Set<string>>();
+    if (dateGoalIds.length > 0) {
+      const { data: allComp, error: allErr } = await supabase
+        .from('completions')
+        .select('goal_id, ts')
+        .in('goal_id', dateGoalIds);
+      if (allErr) throw allErr;
+      for (const r of (allComp ?? []) as { goal_id: string; ts: string }[]) {
+        const set = doneDatesByGoal.get(r.goal_id) ?? new Set<string>();
+        set.add(ymd(new Date(r.ts)));
+        doneDatesByGoal.set(r.goal_id, set);
+      }
+    }
+
     const weekStartMs = startOfWeek(now).getTime();
+    const todayYmd = ymd(now);
     for (const g of goals) {
       const comps = compByGoal.get(g.id) ?? [];
-      const status = todayStatusFor(g, comps, skipByGoal.get(g.id) ?? [], now);
-      const weekDone = comps.filter((ts) => new Date(ts).getTime() >= weekStartMs).length;
-      out[g.id] = { status, weekDone, weekTarget: g.schedule.weeklyTarget };
+      const skips = skipByGoal.get(g.id) ?? [];
+
+      if (g.schedule.dates?.length) {
+        const done = doneDatesByGoal.get(g.id) ?? new Set<string>();
+        const total = g.schedule.dates.length;
+        const doneCount = g.schedule.dates.filter((d) => done.has(d)).length;
+        let status: TodayStatus;
+        if (g.paused || g.archived) status = 'off';
+        else if (done.has(todayYmd)) status = 'done';
+        else if (skips.some((ts) => sameDay(new Date(ts), now))) status = 'skipped';
+        else if (g.schedule.dates.includes(todayYmd)) status = 'pending';
+        else status = 'off';
+        out[g.id] = { status, progress: { done: doneCount, total, kind: 'dates' } };
+        continue;
+      }
+
+      const status = todayStatusFor(g, comps, skips, now);
+      const weeklyTarget = g.schedule.weeklyTarget;
+      const progress =
+        weeklyTarget != null
+          ? {
+              done: comps.filter((ts) => new Date(ts).getTime() >= weekStartMs).length,
+              total: weeklyTarget,
+              kind: 'weekly' as const,
+            }
+          : undefined;
+      out[g.id] = { status, progress };
     }
     return out;
   },

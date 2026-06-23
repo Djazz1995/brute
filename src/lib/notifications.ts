@@ -73,6 +73,23 @@ export async function scheduleWeekly(args: {
   });
 }
 
+/** Schedule a one-time local notification at a specific Date. Returns its id. */
+export async function scheduleOnce(args: {
+  date: Date;
+  title: string;
+  body: string;
+  data: NotifData;
+}): Promise<string> {
+  return Notifications.scheduleNotificationAsync({
+    content: { title: args.title, body: args.body, data: args.data },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: args.date,
+      channelId: ANDROID_CHANNEL,
+    },
+  });
+}
+
 export async function getAllScheduled(): Promise<Notifications.NotificationRequest[]> {
   return Notifications.getAllScheduledNotificationsAsync();
 }

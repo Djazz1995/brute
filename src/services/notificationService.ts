@@ -14,6 +14,7 @@ import {
   ensurePermissions,
   getAllScheduled,
   registerPushToken,
+  scheduleOnce,
   scheduleWeekly,
   setupAndroidChannel,
   type NotifData,
@@ -67,13 +68,23 @@ export const notificationService = {
     if (goal.paused || goal.archived) return;
 
     const body = await wave1Body(goal);
+    const data: NotifData = { goalId: goal.id, wave: 1, deepLink: `/goal/${goal.id}` };
+
+    // Specific-dates goals: one-time reminder per future date at the shared time.
+    if (goal.schedule.dates?.length) {
+      const { hour, minute } = parseTime(goal.schedule.time ?? '09:00');
+      const now = Date.now();
+      for (const d of goal.schedule.dates) {
+        const [y, m, day] = d.split('-').map(Number);
+        const when = new Date(y, m - 1, day, hour, minute, 0, 0);
+        if (when.getTime() <= now) continue; // skip past dates
+        await scheduleOnce({ date: when, title: 'RoastMode', body, data });
+      }
+      return;
+    }
+
     for (const slot of goal.schedule.slots) {
       const { hour, minute } = parseTime(slot.time);
-      const data: NotifData = {
-        goalId: goal.id,
-        wave: 1,
-        deepLink: `/goal/${goal.id}`,
-      };
       await scheduleWeekly({
         isoDay: slot.day,
         hour,

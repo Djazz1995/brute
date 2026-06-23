@@ -101,7 +101,11 @@ export function GoalEditScreen({ goalId }: Props) {
       setError('Name is required.');
       return;
     }
-    if (schedule.weeklyTarget == null && schedule.slots.length === 0) {
+    if (
+      schedule.weeklyTarget == null &&
+      schedule.slots.length === 0 &&
+      (schedule.dates?.length ?? 0) === 0
+    ) {
       setError('Add at least one reminder.');
       return;
     }
